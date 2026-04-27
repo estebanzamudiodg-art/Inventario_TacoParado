@@ -1,0 +1,2243 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inventario · Compras y Mermas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,800;9..144,900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.0.5/dist/tesseract.min.js"></script>
+<style>
+  :root {
+    --ink: #1a0f0a;
+    --paper: #f5ede0;
+    --paper-dark: #ebe0cc;
+    --blood: #8b1a1a;
+    --blood-dark: #5e1010;
+    --mustard: #c89211;
+    --olive: #5a6b3c;
+    --cream: #fbf6ec;
+    --line: #2a1a0f;
+    --shadow: rgba(26, 15, 10, 0.15);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    background-image:
+      radial-gradient(circle at 20% 10%, rgba(200, 146, 17, 0.08) 0%, transparent 40%),
+      radial-gradient(circle at 80% 80%, rgba(139, 26, 26, 0.06) 0%, transparent 40%),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 0.1 0 0 0 0 0.06 0 0 0 0 0.04 0 0 0 0.04 0'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* === HEADER === */
+  header {
+    border-bottom: 3px double var(--line);
+    padding: 32px 40px 24px;
+    background: var(--cream);
+    position: relative;
+  }
+
+  .header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+
+  .brand {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+  }
+
+  .brand-mark {
+    font-family: 'Fraunces', serif;
+    font-weight: 900;
+    font-size: 52px;
+    line-height: 0.9;
+    letter-spacing: -0.03em;
+    color: var(--blood);
+    font-style: italic;
+  }
+
+  .brand-mark span {
+    color: var(--ink);
+    font-style: normal;
+  }
+
+  .brand-sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    color: var(--ink);
+    opacity: 0.7;
+    border-left: 2px solid var(--blood);
+    padding-left: 12px;
+  }
+
+  .meta-strip {
+    display: flex;
+    gap: 24px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+  }
+
+  .meta-strip div span {
+    display: block;
+    font-size: 9px;
+    opacity: 0.6;
+    margin-bottom: 2px;
+  }
+
+  /* === DASHBOARD === */
+  .dashboard {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 0;
+    border-top: 1px solid var(--line);
+    margin-top: 28px;
+  }
+
+  .stat {
+    padding: 18px 0;
+    border-right: 1px solid rgba(26, 15, 10, 0.15);
+  }
+
+  .stat:last-child { border-right: none; }
+
+  .stat-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    opacity: 0.7;
+    margin-bottom: 6px;
+  }
+
+  .stat-value {
+    font-family: 'Fraunces', serif;
+    font-size: 32px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--blood);
+  }
+
+  .stat-value.ink { color: var(--ink); }
+  .stat-value.olive { color: var(--olive); }
+
+  /* === NAV TABS === */
+  nav.tabs {
+    display: flex;
+    gap: 0;
+    padding: 0 40px;
+    background: var(--paper-dark);
+    border-bottom: 1px solid var(--line);
+    overflow-x: auto;
+  }
+
+  .tab {
+    background: none;
+    border: none;
+    padding: 18px 28px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--ink);
+    cursor: pointer;
+    position: relative;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .tab:hover { background: rgba(139, 26, 26, 0.05); }
+
+  .tab.active {
+    background: var(--paper);
+    color: var(--blood);
+    font-weight: 700;
+  }
+
+  .tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--blood);
+  }
+
+  /* === MAIN === */
+  main {
+    padding: 40px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .panel { display: none; }
+  .panel.active { display: block; animation: fadeIn 0.3s ease; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .panel-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 24px;
+    border-bottom: 2px solid var(--line);
+    padding-bottom: 16px;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .panel-title {
+    font-family: 'Fraunces', serif;
+    font-size: 36px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+
+  .panel-title em {
+    color: var(--blood);
+    font-style: italic;
+    font-weight: 900;
+  }
+
+  .panel-sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    opacity: 0.6;
+    margin-top: 4px;
+  }
+
+  /* === BUTTONS === */
+  .btn {
+    background: var(--ink);
+    color: var(--paper);
+    border: none;
+    padding: 12px 22px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-weight: 500;
+    border: 2px solid var(--ink);
+  }
+
+  .btn:hover {
+    background: var(--blood);
+    border-color: var(--blood);
+    transform: translate(-1px, -1px);
+    box-shadow: 3px 3px 0 var(--ink);
+  }
+
+  .btn-primary {
+    background: var(--blood);
+    border-color: var(--blood);
+  }
+
+  .btn-primary:hover {
+    background: var(--blood-dark);
+    border-color: var(--blood-dark);
+  }
+
+  .btn-export {
+    background: var(--olive);
+    border-color: var(--olive);
+  }
+
+  .btn-export:hover {
+    background: #3d4a26;
+    border-color: #3d4a26;
+  }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--ink);
+  }
+
+  .btn-ghost:hover {
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  .btn-sm {
+    padding: 6px 12px;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+  }
+
+  .btn-icon {
+    background: transparent;
+    border: 1px solid var(--line);
+    color: var(--ink);
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 14px;
+    margin: 0 2px;
+    transition: all 0.15s;
+  }
+
+  .btn-icon:hover {
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  .btn-icon.danger:hover {
+    background: var(--blood);
+    border-color: var(--blood);
+  }
+
+  .actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+  /* === FORM === */
+  .form-card {
+    background: var(--cream);
+    border: 1px solid var(--line);
+    padding: 24px;
+    margin-bottom: 28px;
+    box-shadow: 4px 4px 0 var(--ink);
+    display: none;
+  }
+
+  .form-card.open { display: block; }
+
+  .form-card-title {
+    font-family: 'Fraunces', serif;
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 18px;
+    border-bottom: 1px dashed var(--line);
+    padding-bottom: 10px;
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+
+  .field label {
+    display: block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    margin-bottom: 6px;
+    color: var(--ink);
+    opacity: 0.7;
+  }
+
+  .field input,
+  .field select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    background: var(--paper);
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    color: var(--ink);
+    transition: all 0.15s;
+  }
+
+  .field input:focus,
+  .field select:focus {
+    outline: none;
+    border-color: var(--blood);
+    box-shadow: 0 0 0 3px rgba(139, 26, 26, 0.15);
+  }
+
+  /* === TABLE === */
+  .table-wrap {
+    background: var(--cream);
+    border: 1px solid var(--line);
+    overflow-x: auto;
+    box-shadow: 4px 4px 0 var(--ink);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+
+  thead {
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  thead th {
+    padding: 14px 16px;
+    text-align: left;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    font-weight: 500;
+    border-right: 1px solid rgba(245, 237, 224, 0.15);
+  }
+
+  thead th:last-child { border-right: none; text-align: center; }
+
+  tbody tr {
+    border-bottom: 1px solid rgba(26, 15, 10, 0.1);
+    transition: background 0.15s;
+  }
+
+  tbody tr:hover { background: rgba(139, 26, 26, 0.04); }
+  tbody tr:nth-child(even) { background: rgba(26, 15, 10, 0.02); }
+  tbody tr:nth-child(even):hover { background: rgba(139, 26, 26, 0.04); }
+
+  tbody td {
+    padding: 14px 16px;
+    border-right: 1px solid rgba(26, 15, 10, 0.06);
+    vertical-align: middle;
+  }
+
+  tbody td:last-child { border-right: none; text-align: center; white-space: nowrap; }
+
+  .price {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 500;
+    color: var(--blood);
+  }
+
+  .qty {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 500;
+  }
+
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    border: 1px solid var(--line);
+    background: var(--paper);
+  }
+
+  .badge.carnes { background: var(--blood); color: var(--paper); border-color: var(--blood); }
+  .badge.quesera { background: var(--mustard); color: var(--ink); border-color: var(--mustard); }
+  .badge.fruver { background: var(--olive); color: var(--paper); border-color: var(--olive); }
+
+  .empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--ink);
+    opacity: 0.5;
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-size: 18px;
+  }
+
+  /* === MERMAS === */
+  .mermas-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+
+  .merma-card {
+    background: var(--cream);
+    border: 1px solid var(--line);
+    padding: 20px;
+    position: relative;
+    transition: all 0.2s;
+    cursor: pointer;
+    box-shadow: 3px 3px 0 var(--ink);
+  }
+
+  .merma-card:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 5px 5px 0 var(--ink);
+  }
+
+  .merma-card-name {
+    font-family: 'Fraunces', serif;
+    font-size: 22px;
+    font-weight: 700;
+    text-transform: capitalize;
+    color: var(--ink);
+    margin-bottom: 8px;
+    letter-spacing: -0.01em;
+  }
+
+  .merma-card-total {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--blood);
+    line-height: 1;
+  }
+
+  .merma-card-unit {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    opacity: 0.6;
+    margin-top: 4px;
+  }
+
+  .merma-card-count {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: var(--ink);
+    color: var(--paper);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    padding: 2px 8px;
+  }
+
+  .merma-calc {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 0;
+    margin: 18px 0;
+    border: 1.5px solid var(--line);
+    background: var(--cream);
+  }
+  .merma-calc-item {
+    padding: 14px 16px;
+    border-right: 1px solid rgba(26, 15, 10, 0.15);
+    text-align: center;
+  }
+  .merma-calc-item:last-child { border-right: none; }
+  .merma-calc-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    opacity: 0.65;
+    margin-bottom: 6px;
+  }
+  .merma-calc-value {
+    font-family: 'Fraunces', serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--ink);
+    line-height: 1.1;
+  }
+  .merma-calc-item.alert .merma-calc-value { color: var(--blood); }
+  @media (max-width: 720px) {
+    .merma-calc-item {
+      border-right: none;
+      border-bottom: 1px solid rgba(26, 15, 10, 0.15);
+    }
+    .merma-calc-item:last-child { border-bottom: none; }
+  }
+
+  /* === MODAL === */
+  .modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(26, 15, 10, 0.6);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+
+  .modal.open { display: flex; animation: fadeIn 0.2s; }
+
+  .modal-content {
+    background: var(--cream);
+    border: 1px solid var(--line);
+    box-shadow: 8px 8px 0 var(--ink);
+    max-width: 540px;
+    width: 100%;
+    padding: 28px;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  .modal-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    border-bottom: 2px solid var(--line);
+    padding-bottom: 14px;
+  }
+
+  .modal-title {
+    font-family: 'Fraunces', serif;
+    font-size: 24px;
+    font-weight: 800;
+  }
+
+  .modal-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: var(--ink);
+    padding: 0;
+    width: 32px;
+    height: 32px;
+  }
+
+  .modal-close:hover { color: var(--blood); }
+
+  /* === TOAST === */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--ink);
+    color: var(--paper);
+    padding: 14px 20px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    border-left: 4px solid var(--mustard);
+    box-shadow: 4px 4px 0 var(--blood);
+    z-index: 200;
+    transform: translateX(120%);
+    transition: transform 0.3s;
+  }
+
+  .toast.show { transform: translateX(0); }
+  .toast.success { border-left-color: var(--olive); }
+  .toast.error { border-left-color: var(--blood); }
+
+  /* === FILTER === */
+  .filter-bar {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+
+  .filter-bar input,
+  .filter-bar select {
+    padding: 10px 14px;
+    border: 1px solid var(--line);
+    background: var(--cream);
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    min-width: 180px;
+  }
+
+  /* === DECORATIVE === */
+  .ornament {
+    text-align: center;
+    margin: 40px 0 20px;
+    font-family: 'Fraunces', serif;
+    color: var(--blood);
+    letter-spacing: 1em;
+    opacity: 0.5;
+  }
+
+  /* === RESPONSIVE === */
+  @media (max-width: 720px) {
+    header { padding: 20px; }
+    main { padding: 20px; }
+    .brand-mark { font-size: 38px; }
+    .panel-title { font-size: 26px; }
+    nav.tabs { padding: 0 20px; }
+    .tab { padding: 14px 18px; font-size: 11px; }
+    .stat-value { font-size: 24px; }
+    thead th, tbody td { padding: 10px; font-size: 12px; }
+  }
+
+  /* === SCANNER === */
+  .scan-modes {
+    display: flex;
+    gap: 0;
+    margin-bottom: 24px;
+    border: 1.5px solid var(--line);
+    background: var(--cream);
+    width: fit-content;
+  }
+  .scan-mode {
+    padding: 12px 22px;
+    border: none;
+    background: transparent;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    color: var(--ink);
+    border-right: 1.5px solid var(--line);
+    transition: all 0.15s ease;
+  }
+  .scan-mode:last-child { border-right: none; }
+  .scan-mode:hover { background: rgba(139, 26, 26, 0.05); }
+  .scan-mode.active { background: var(--ink); color: var(--cream); }
+
+  .scan-pane { display: none; }
+  .scan-pane.active { display: block; animation: fadeIn 0.3s ease; }
+
+  .scan-config {
+    background: var(--cream);
+    border: 1.5px solid var(--line);
+    padding: 18px;
+    margin-bottom: 18px;
+  }
+
+  .dropzone {
+    border: 2.5px dashed var(--line);
+    background: var(--cream);
+    padding: 40px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    min-height: 240px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .dropzone:hover, .dropzone.drag-over {
+    background: var(--paper-dark);
+    border-color: var(--blood);
+  }
+  .dropzone-icon {
+    font-size: 56px;
+    margin-bottom: 12px;
+    filter: grayscale(0.3);
+  }
+  .dropzone-title {
+    font-family: 'Fraunces', serif;
+    font-size: 22px;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+  .dropzone-sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: rgba(26, 15, 10, 0.6);
+    margin-bottom: 16px;
+    letter-spacing: 0.05em;
+  }
+  .dropzone-actions { display: flex; gap: 10px; justify-content: center; }
+  .dropzone-preview { width: 100%; }
+  .dropzone-preview img {
+    max-width: 100%;
+    max-height: 360px;
+    display: block;
+    margin: 0 auto;
+    border: 1.5px solid var(--line);
+  }
+
+  .scan-progress {
+    margin-top: 18px;
+    padding: 16px;
+    background: var(--cream);
+    border: 1.5px solid var(--line);
+  }
+  .progress-bar {
+    height: 8px;
+    background: var(--paper-dark);
+    border: 1px solid var(--line);
+    overflow: hidden;
+    margin-bottom: 8px;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--blood), var(--mustard));
+    width: 0%;
+    transition: width 0.3s ease;
+  }
+  .progress-text {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-align: center;
+  }
+
+  .scan-actions {
+    margin-top: 16px;
+    display: flex;
+    gap: 10px;
+  }
+
+  .ocr-raw {
+    margin-top: 18px;
+    background: var(--cream);
+    border: 1.5px solid var(--line);
+    padding: 16px;
+  }
+  .ocr-raw textarea {
+    width: 100%;
+    border: 1.5px solid var(--line);
+    padding: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    background: white;
+    resize: vertical;
+  }
+
+  .review-section {
+    margin-top: 24px;
+    border-top: 2px solid var(--line);
+    padding-top: 24px;
+  }
+  .review-head { margin-bottom: 16px; }
+  .review-title {
+    font-family: 'Fraunces', serif;
+    font-size: 24px;
+    font-weight: 700;
+  }
+  .review-title em {
+    font-style: italic;
+    color: var(--blood);
+    font-weight: 400;
+  }
+  .review-sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: rgba(26, 15, 10, 0.6);
+    letter-spacing: 0.06em;
+    margin-top: 4px;
+  }
+  .review-table input, .review-table select {
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid rgba(26, 15, 10, 0.3);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    background: white;
+  }
+  .review-table input:focus, .review-table select:focus {
+    outline: none;
+    border-color: var(--blood);
+    box-shadow: 0 0 0 2px rgba(139, 26, 26, 0.1);
+  }
+  .review-table tr.unchecked td { opacity: 0.4; }
+  .review-table input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+  }
+  .review-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 18px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .btn-row-delete {
+    background: transparent;
+    border: 1px solid rgba(139, 26, 26, 0.4);
+    color: var(--blood);
+    padding: 5px 9px;
+    font-size: 11px;
+    cursor: pointer;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .btn-row-delete:hover { background: var(--blood); color: white; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-top">
+    <div>
+      <div class="brand">
+        <div class="brand-mark"><span>EL</span> Inventario</div>
+      </div>
+      <div class="brand-sub" style="margin-top: 8px;">Sistema de Compras · Productos · Mermas</div>
+    </div>
+    <div class="meta-strip">
+      <div><span>Fecha</span><strong id="todayDate">—</strong></div>
+      <div><span>Estado</span><strong style="color: var(--olive);">● ACTIVO</strong></div>
+    </div>
+  </div>
+
+  <div class="dashboard">
+    <div class="stat">
+      <div class="stat-label">Proveedores</div>
+      <div class="stat-value ink" id="statProveedores">0</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Productos</div>
+      <div class="stat-value" id="statProductos">0</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Inversión Total</div>
+      <div class="stat-value olive" id="statInversion">$0</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Mermas Registradas</div>
+      <div class="stat-value ink" id="statMermas">0</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Total en Mermas (kg)</div>
+      <div class="stat-value" id="statMermasKg">0</div>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs">
+  <button class="tab active" data-panel="productos">Inventario</button>
+  <button class="tab" data-panel="escanear">Escanear</button>
+  <button class="tab" data-panel="proveedores">Proveedores</button>
+  <button class="tab" data-panel="mermas">Mermas</button>
+  <button class="tab" data-panel="exportar">Exportar</button>
+</nav>
+
+<main>
+
+  <!-- === PRODUCTOS === -->
+  <section class="panel active" id="panel-productos">
+    <div class="panel-head">
+      <div>
+        <h2 class="panel-title">Inventario de <em>Compras</em></h2>
+        <div class="panel-sub">Registro de productos por proveedor</div>
+      </div>
+      <div class="actions">
+        <button class="btn btn-primary" onclick="toggleForm('formProducto')">+ Agregar Producto</button>
+      </div>
+    </div>
+
+    <div class="form-card" id="formProducto">
+      <div class="form-card-title" id="formProductoTitle">Nuevo producto</div>
+      <input type="hidden" id="prodId">
+      <div class="form-grid">
+        <div class="field">
+          <label>Nombre</label>
+          <input type="text" id="prodNombre" placeholder="Ej: Costilla de res">
+        </div>
+        <div class="field">
+          <label>Cantidad</label>
+          <input type="number" id="prodCantidad" step="0.01" placeholder="0.00">
+        </div>
+        <div class="field">
+          <label>Unidad</label>
+          <select id="prodUnidad">
+            <option value="kg">kg</option>
+            <option value="g">g</option>
+            <option value="lb">lb</option>
+            <option value="pza">pieza</option>
+            <option value="caja">caja</option>
+            <option value="L">litro</option>
+            <option value="bulto">bulto</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Precio Unitario</label>
+          <input type="number" id="prodPrecio" step="0.01" placeholder="0.00">
+        </div>
+        <div class="field">
+          <label>Proveedor</label>
+          <select id="prodProveedor"></select>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn btn-primary" onclick="saveProducto()">Guardar</button>
+        <button class="btn btn-ghost" onclick="toggleForm('formProducto')">Cancelar</button>
+      </div>
+    </div>
+
+    <div class="filter-bar">
+      <input type="text" id="filterProdNombre" placeholder="🔍 Buscar producto..." oninput="renderProductos()">
+      <select id="filterProdProv" onchange="renderProductos()">
+        <option value="">Todos los proveedores</option>
+      </select>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Producto</th>
+            <th>Cantidad</th>
+            <th>Precio Unit.</th>
+            <th>Subtotal</th>
+            <th>Proveedor</th>
+            <th>Categoría</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tblProductos"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- === ESCANEAR === -->
+  <section class="panel" id="panel-escanear">
+    <div class="panel-head">
+      <div>
+        <h2 class="panel-title">Escanear <em>Factura</em></h2>
+        <div class="panel-sub">Foto, cámara o texto pegado · OCR automático con revisión</div>
+      </div>
+    </div>
+
+    <div class="scan-modes">
+      <button class="scan-mode active" data-mode="foto">📷 Foto / Cámara</button>
+      <button class="scan-mode" data-mode="texto">📝 Pegar texto</button>
+    </div>
+
+    <!-- Modo Foto -->
+    <div class="scan-pane active" id="scanFoto">
+      <div class="scan-config">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Proveedor (asignar a todos los items)</label>
+            <select id="scanProveedor">
+              <option value="">-- Selecciona un proveedor --</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Fecha de compra</label>
+            <input type="date" id="scanFecha">
+          </div>
+        </div>
+      </div>
+
+      <div class="dropzone" id="dropzone">
+        <input type="file" id="fileInput" accept="image/*" capture="environment" hidden>
+        <div class="dropzone-content">
+          <div class="dropzone-icon">📸</div>
+          <div class="dropzone-title">Toma una foto o sube una imagen</div>
+          <div class="dropzone-sub">Arrastra aquí · Toca para abrir cámara · O pega con Ctrl+V</div>
+          <div class="dropzone-actions">
+            <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">Seleccionar imagen</button>
+          </div>
+        </div>
+        <div class="dropzone-preview" id="dropzonePreview" style="display:none">
+          <img id="previewImg" alt="Vista previa">
+        </div>
+      </div>
+
+      <div class="scan-progress" id="scanProgress" style="display:none">
+        <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+        <div class="progress-text" id="progressText">Procesando...</div>
+      </div>
+
+      <div class="scan-actions" id="scanActions" style="display:none">
+        <button class="btn btn-primary" id="btnProcesarOCR">Procesar imagen</button>
+        <button class="btn btn-ghost" onclick="resetScanFoto()">Cancelar</button>
+      </div>
+
+      <div class="ocr-raw" id="ocrRaw" style="display:none">
+        <label>Texto detectado (puedes editarlo antes de extraer)</label>
+        <textarea id="ocrRawText" rows="8"></textarea>
+        <div style="margin-top:10px">
+          <button class="btn btn-primary" onclick="extraerDeTexto(document.getElementById('ocrRawText').value)">Extraer items →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modo Texto -->
+    <div class="scan-pane" id="scanTexto">
+      <div class="scan-config">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Proveedor</label>
+            <select id="scanProveedorTxt">
+              <option value="">-- Selecciona un proveedor --</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Fecha de compra</label>
+            <input type="date" id="scanFechaTxt">
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Pega aquí el texto de la factura, mensaje del proveedor o lista</label>
+        <textarea id="scanTextoInput" rows="10" placeholder="Ejemplos válidos:&#10;&#10;Costilla 5 kg 22000&#10;Cebolla larga - 3kg - $3500&#10;Tomate chonto 10 x 2800&#10;Queso doble crema 5kg 14.000&#10;&#10;Pega lo que tengas, el sistema intentará reconocer producto, cantidad y precio."></textarea>
+      </div>
+      <button class="btn btn-primary" onclick="extraerDeTexto(document.getElementById('scanTextoInput').value)">Extraer items →</button>
+    </div>
+
+    <!-- Tabla de revisión -->
+    <div class="review-section" id="reviewSection" style="display:none">
+      <div class="review-head">
+        <h3 class="review-title">Revisar y editar antes de guardar</h3>
+        <div class="review-sub">Corrige cualquier error del OCR · Marca los items que NO quieres importar</div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="review-table">
+          <thead>
+            <tr>
+              <th style="width:40px">✓</th>
+              <th>Producto</th>
+              <th style="width:90px">Cantidad</th>
+              <th style="width:80px">Unidad</th>
+              <th style="width:120px">Precio Unit.</th>
+              <th style="width:60px"></th>
+            </tr>
+          </thead>
+          <tbody id="reviewBody"></tbody>
+        </table>
+      </div>
+
+      <div class="review-actions">
+        <button class="btn btn-ghost" onclick="addReviewRow()">+ Añadir fila manual</button>
+        <div style="flex:1"></div>
+        <button class="btn btn-ghost" onclick="cancelReview()">Cancelar todo</button>
+        <button class="btn btn-primary" onclick="confirmarImportacion()">✓ Importar al inventario</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- === PROVEEDORES === -->
+  <section class="panel" id="panel-proveedores">
+    <div class="panel-head">
+      <div>
+        <h2 class="panel-title">Lista de <em>Proveedores</em></h2>
+        <div class="panel-sub">Carnes · Quesera · Fruver · Otros</div>
+      </div>
+      <div class="actions">
+        <button class="btn btn-primary" onclick="toggleForm('formProveedor')">+ Agregar Proveedor</button>
+      </div>
+    </div>
+
+    <div class="form-card" id="formProveedor">
+      <div class="form-card-title" id="formProveedorTitle">Nuevo proveedor</div>
+      <input type="hidden" id="provId">
+      <div class="form-grid">
+        <div class="field">
+          <label>Nombre / Razón Social</label>
+          <input type="text" id="provNombre" placeholder="Ej: Carnicería Don Julio">
+        </div>
+        <div class="field">
+          <label>Categoría</label>
+          <select id="provCategoria">
+            <option value="carnes">Carnes</option>
+            <option value="quesera">Quesera</option>
+            <option value="fruver">Fruver</option>
+            <option value="otros">Otros</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Teléfono</label>
+          <input type="text" id="provTelefono" placeholder="3xx xxx xxxx">
+        </div>
+        <div class="field">
+          <label>Contacto</label>
+          <input type="text" id="provContacto" placeholder="Nombre del contacto">
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn btn-primary" onclick="saveProveedor()">Guardar</button>
+        <button class="btn btn-ghost" onclick="toggleForm('formProveedor')">Cancelar</button>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Proveedor</th>
+            <th>Categoría</th>
+            <th>Teléfono</th>
+            <th>Contacto</th>
+            <th>Productos</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tblProveedores"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- === MERMAS === -->
+  <section class="panel" id="panel-mermas">
+    <div class="panel-head">
+      <div>
+        <h2 class="panel-title">Cuadro de <em>Mermas</em></h2>
+        <div class="panel-sub">Suadero · Longaniza · Birria · Asada · Pastor · Oreja · Lengua</div>
+      </div>
+      <div class="actions">
+        <button class="btn btn-primary" onclick="toggleForm('formMerma')">+ Registrar Merma</button>
+      </div>
+    </div>
+
+    <div class="mermas-grid" id="mermasResumen"></div>
+
+    <div class="form-card" id="formMerma">
+      <div class="form-card-title" id="formMermaTitle">Registrar merma de cocción</div>
+      <input type="hidden" id="mermaId">
+      <div class="form-grid">
+        <div class="field">
+          <label>Tipo de Carne</label>
+          <select id="mermaTipo">
+            <option value="suadero">Suadero</option>
+            <option value="longaniza">Longaniza</option>
+            <option value="birria">Birria</option>
+            <option value="asada">Asada</option>
+            <option value="pastor">Pastor</option>
+            <option value="oreja">Oreja</option>
+            <option value="lengua">Lengua</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Fecha</label>
+          <input type="date" id="mermaFecha">
+        </div>
+        <div class="field">
+          <label>Peso ANTES de cocción (kg)</label>
+          <input type="number" id="mermaPesoAntes" step="0.01" placeholder="0.00" oninput="recalcMerma()">
+        </div>
+        <div class="field">
+          <label>Peso DESPUÉS de cocción (kg)</label>
+          <input type="number" id="mermaPesoDespues" step="0.01" placeholder="0.00" oninput="recalcMerma()">
+        </div>
+        <div class="field">
+          <label>Costo por kg crudo (opcional)</label>
+          <input type="number" id="mermaCosto" step="0.01" placeholder="0.00" oninput="recalcMerma()">
+        </div>
+        <div class="field" style="grid-column: 1 / -1;">
+          <label>Motivo / Observación</label>
+          <input type="text" id="mermaMotivo" placeholder="Ej: Cocción normal, exceso de grasa, fuego alto...">
+        </div>
+      </div>
+
+      <!-- Resumen calculado en vivo -->
+      <div class="merma-calc" id="mermaCalc">
+        <div class="merma-calc-item">
+          <div class="merma-calc-label">Merma absoluta</div>
+          <div class="merma-calc-value" id="calcAbsoluta">0,00 kg</div>
+        </div>
+        <div class="merma-calc-item">
+          <div class="merma-calc-label">% de pérdida</div>
+          <div class="merma-calc-value" id="calcPorcentaje">0%</div>
+        </div>
+        <div class="merma-calc-item">
+          <div class="merma-calc-label">Rendimiento</div>
+          <div class="merma-calc-value" id="calcRendimiento">100%</div>
+        </div>
+        <div class="merma-calc-item">
+          <div class="merma-calc-label">Valor perdido</div>
+          <div class="merma-calc-value" id="calcValor">$0</div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn btn-primary" onclick="saveMerma()">Guardar</button>
+        <button class="btn btn-ghost" onclick="toggleForm('formMerma')">Cancelar</button>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Tipo de Carne</th>
+            <th>Antes (kg)</th>
+            <th>Después (kg)</th>
+            <th>Merma (kg)</th>
+            <th>%</th>
+            <th>Valor</th>
+            <th>Motivo</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tblMermas"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- === EXPORTAR === -->
+  <section class="panel" id="panel-exportar">
+    <div class="panel-head">
+      <div>
+        <h2 class="panel-title">Exportar <em>Informe</em></h2>
+        <div class="panel-sub">Genera un archivo Excel con todos los datos</div>
+      </div>
+    </div>
+
+    <div style="background: var(--cream); border: 1px solid var(--line); padding: 32px; box-shadow: 4px 4px 0 var(--ink);">
+      <p style="font-family: 'Fraunces', serif; font-size: 18px; line-height: 1.6; margin-bottom: 24px;">
+        El archivo Excel incluirá <strong>4 hojas</strong>: <em>Resumen General</em>, <em>Proveedores</em>, <em>Inventario de Productos</em> y <em>Mermas</em>.
+      </p>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 28px;">
+        <div style="padding: 16px; border: 1px dashed var(--line); background: var(--paper);">
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.15em; opacity: 0.6;">Hoja 1</div>
+          <div style="font-family: 'Fraunces', serif; font-weight: 700; font-size: 16px; margin-top: 4px;">Resumen</div>
+        </div>
+        <div style="padding: 16px; border: 1px dashed var(--line); background: var(--paper);">
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.15em; opacity: 0.6;">Hoja 2</div>
+          <div style="font-family: 'Fraunces', serif; font-weight: 700; font-size: 16px; margin-top: 4px;">Proveedores</div>
+        </div>
+        <div style="padding: 16px; border: 1px dashed var(--line); background: var(--paper);">
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.15em; opacity: 0.6;">Hoja 3</div>
+          <div style="font-family: 'Fraunces', serif; font-weight: 700; font-size: 16px; margin-top: 4px;">Inventario</div>
+        </div>
+        <div style="padding: 16px; border: 1px dashed var(--line); background: var(--paper);">
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.15em; opacity: 0.6;">Hoja 4</div>
+          <div style="font-family: 'Fraunces', serif; font-weight: 700; font-size: 16px; margin-top: 4px;">Mermas</div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn btn-export" onclick="exportToExcel()">↓ Descargar Excel</button>
+        <button class="btn" onclick="exportBackup()">↓ Backup JSON</button>
+        <button class="btn btn-ghost" onclick="document.getElementById('importFile').click()">↑ Restaurar Backup</button>
+        <input type="file" id="importFile" accept=".json" style="display:none" onchange="importBackup(event)">
+      </div>
+
+      <div class="ornament">❦  ❦  ❦</div>
+
+      <div style="border-top: 1px dashed var(--line); padding-top: 20px;">
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.15em; opacity: 0.6; margin-bottom: 12px;">Zona de peligro</div>
+        <button class="btn btn-ghost" onclick="clearAllData()" style="border-color: var(--blood); color: var(--blood);">⚠ Borrar todos los datos</button>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============== STATE ==============
+let state = {
+  proveedores: [],
+  productos: [],
+  mermas: []
+};
+
+const TIPOS_MERMA = ['suadero', 'longaniza', 'birria', 'asada', 'pastor', 'oreja', 'lengua'];
+
+// ============== STORAGE ==============
+function save() {
+  try {
+    const data = JSON.stringify(state);
+    document.cookie = `inv_data=${encodeURIComponent(data)}; max-age=31536000; path=/`;
+    // Also keep in window for session
+    window._invData = data;
+  } catch(e) { console.error(e); }
+}
+
+function load() {
+  try {
+    if (window._invData) {
+      state = JSON.parse(window._invData);
+      return;
+    }
+    const match = document.cookie.match(/inv_data=([^;]+)/);
+    if (match) {
+      state = JSON.parse(decodeURIComponent(match[1]));
+    }
+  } catch(e) {
+    console.error('Error loading data:', e);
+  }
+  // Ensure structure
+  if (!state.proveedores) state.proveedores = [];
+  if (!state.productos) state.productos = [];
+  if (!state.mermas) state.mermas = [];
+
+  // Seed default suppliers if empty
+  if (state.proveedores.length === 0) {
+    state.proveedores = [
+      { id: uid(), nombre: 'Proveedor de Carnes', categoria: 'carnes', telefono: '', contacto: '' },
+      { id: uid(), nombre: 'Proveedor de Quesera', categoria: 'quesera', telefono: '', contacto: '' },
+      { id: uid(), nombre: 'Proveedor Fruver', categoria: 'fruver', telefono: '', contacto: '' }
+    ];
+    save();
+  }
+}
+
+function uid() {
+  return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+}
+
+// ============== HELPERS ==============
+function fmt(n) {
+  return new Intl.NumberFormat('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(n || 0);
+}
+
+function fmtMoney(n) {
+  return '$' + new Intl.NumberFormat('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(n || 0);
+}
+
+function toast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + type;
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+function toggleForm(id) {
+  const f = document.getElementById(id);
+  f.classList.toggle('open');
+  if (f.classList.contains('open')) {
+    f.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+  // reset edit state
+  if (id === 'formProducto' && !f.classList.contains('open')) {
+    document.getElementById('prodId').value = '';
+    document.getElementById('formProductoTitle').textContent = 'Nuevo producto';
+    ['prodNombre','prodCantidad','prodPrecio'].forEach(i => document.getElementById(i).value = '');
+  }
+  if (id === 'formProveedor' && !f.classList.contains('open')) {
+    document.getElementById('provId').value = '';
+    document.getElementById('formProveedorTitle').textContent = 'Nuevo proveedor';
+    ['provNombre','provTelefono','provContacto'].forEach(i => document.getElementById(i).value = '');
+  }
+  if (id === 'formMerma' && !f.classList.contains('open')) {
+    document.getElementById('mermaId').value = '';
+    document.getElementById('formMermaTitle').textContent = 'Registrar merma de cocción';
+    ['mermaPesoAntes','mermaPesoDespues','mermaCosto','mermaMotivo'].forEach(i => document.getElementById(i).value = '');
+    if (typeof recalcMerma === 'function') recalcMerma();
+  }
+}
+
+// ============== TABS ==============
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('panel-' + tab.dataset.panel).classList.add('active');
+  });
+});
+
+// ============== PROVEEDORES ==============
+function saveProveedor() {
+  const id = document.getElementById('provId').value;
+  const nombre = document.getElementById('provNombre').value.trim();
+  const categoria = document.getElementById('provCategoria').value;
+  const telefono = document.getElementById('provTelefono').value.trim();
+  const contacto = document.getElementById('provContacto').value.trim();
+
+  if (!nombre) { toast('Falta el nombre del proveedor', 'error'); return; }
+
+  if (id) {
+    const p = state.proveedores.find(x => x.id === id);
+    Object.assign(p, { nombre, categoria, telefono, contacto });
+    toast('Proveedor actualizado');
+  } else {
+    state.proveedores.push({ id: uid(), nombre, categoria, telefono, contacto });
+    toast('Proveedor agregado');
+  }
+
+  save();
+  renderAll();
+  toggleForm('formProveedor');
+}
+
+function editProveedor(id) {
+  const p = state.proveedores.find(x => x.id === id);
+  if (!p) return;
+  document.getElementById('provId').value = p.id;
+  document.getElementById('provNombre').value = p.nombre;
+  document.getElementById('provCategoria').value = p.categoria;
+  document.getElementById('provTelefono').value = p.telefono || '';
+  document.getElementById('provContacto').value = p.contacto || '';
+  document.getElementById('formProveedorTitle').textContent = 'Editar proveedor';
+  const f = document.getElementById('formProveedor');
+  if (!f.classList.contains('open')) f.classList.add('open');
+  f.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function deleteProveedor(id) {
+  const usados = state.productos.filter(p => p.proveedorId === id).length;
+  if (usados > 0) {
+    if (!confirm(`Este proveedor tiene ${usados} producto(s) asociado(s). ¿Eliminar de todas formas? Los productos quedarán sin proveedor.`)) return;
+  } else {
+    if (!confirm('¿Eliminar este proveedor?')) return;
+  }
+  state.proveedores = state.proveedores.filter(x => x.id !== id);
+  save();
+  renderAll();
+  toast('Proveedor eliminado');
+}
+
+function renderProveedores() {
+  const tb = document.getElementById('tblProveedores');
+  if (state.proveedores.length === 0) {
+    tb.innerHTML = '<tr><td colspan="6"><div class="empty">No hay proveedores. Agrega uno para empezar.</div></td></tr>';
+    return;
+  }
+  tb.innerHTML = state.proveedores.map(p => {
+    const count = state.productos.filter(pr => pr.proveedorId === p.id).length;
+    return `
+      <tr>
+        <td><strong>${escapeHTML(p.nombre)}</strong></td>
+        <td><span class="badge ${p.categoria}">${p.categoria}</span></td>
+        <td>${escapeHTML(p.telefono || '—')}</td>
+        <td>${escapeHTML(p.contacto || '—')}</td>
+        <td class="qty">${count}</td>
+        <td>
+          <button class="btn-icon" onclick="editProveedor('${p.id}')" title="Editar">✎</button>
+          <button class="btn-icon danger" onclick="deleteProveedor('${p.id}')" title="Eliminar">✕</button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function refreshProveedorSelects() {
+  const sel = document.getElementById('prodProveedor');
+  const filter = document.getElementById('filterProdProv');
+  const scanProv = document.getElementById('scanProveedor');
+  const scanProvTxt = document.getElementById('scanProveedorTxt');
+  const opts = state.proveedores.map(p =>
+    `<option value="${p.id}">${escapeHTML(p.nombre)} · ${p.categoria}</option>`
+  ).join('');
+  sel.innerHTML = opts || '<option value="">— sin proveedores —</option>';
+  filter.innerHTML = '<option value="">Todos los proveedores</option>' + opts;
+  if (scanProv) scanProv.innerHTML = '<option value="">-- Selecciona un proveedor --</option>' + opts;
+  if (scanProvTxt) scanProvTxt.innerHTML = '<option value="">-- Selecciona un proveedor --</option>' + opts;
+}
+
+// ============== PRODUCTOS ==============
+function saveProducto() {
+  const id = document.getElementById('prodId').value;
+  const nombre = document.getElementById('prodNombre').value.trim();
+  const cantidad = parseFloat(document.getElementById('prodCantidad').value) || 0;
+  const unidad = document.getElementById('prodUnidad').value;
+  const precio = parseFloat(document.getElementById('prodPrecio').value) || 0;
+  const proveedorId = document.getElementById('prodProveedor').value;
+
+  if (!nombre) { toast('Falta el nombre del producto', 'error'); return; }
+  if (!proveedorId) { toast('Selecciona un proveedor', 'error'); return; }
+
+  if (id) {
+    const p = state.productos.find(x => x.id === id);
+    Object.assign(p, { nombre, cantidad, unidad, precio, proveedorId });
+    toast('Producto actualizado');
+  } else {
+    state.productos.push({ id: uid(), nombre, cantidad, unidad, precio, proveedorId, fecha: new Date().toISOString() });
+    toast('Producto agregado');
+  }
+
+  save();
+  renderAll();
+  toggleForm('formProducto');
+}
+
+function editProducto(id) {
+  const p = state.productos.find(x => x.id === id);
+  if (!p) return;
+  document.getElementById('prodId').value = p.id;
+  document.getElementById('prodNombre').value = p.nombre;
+  document.getElementById('prodCantidad').value = p.cantidad;
+  document.getElementById('prodUnidad').value = p.unidad || 'kg';
+  document.getElementById('prodPrecio').value = p.precio;
+  document.getElementById('prodProveedor').value = p.proveedorId;
+  document.getElementById('formProductoTitle').textContent = 'Editar producto';
+  const f = document.getElementById('formProducto');
+  if (!f.classList.contains('open')) f.classList.add('open');
+  f.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function deleteProducto(id) {
+  if (!confirm('¿Eliminar este producto del inventario?')) return;
+  state.productos = state.productos.filter(x => x.id !== id);
+  save();
+  renderAll();
+  toast('Producto eliminado');
+}
+
+function renderProductos() {
+  const tb = document.getElementById('tblProductos');
+  const fNombre = (document.getElementById('filterProdNombre').value || '').toLowerCase();
+  const fProv = document.getElementById('filterProdProv').value;
+
+  let lista = state.productos.filter(p => {
+    if (fNombre && !p.nombre.toLowerCase().includes(fNombre)) return false;
+    if (fProv && p.proveedorId !== fProv) return false;
+    return true;
+  });
+
+  if (lista.length === 0) {
+    tb.innerHTML = '<tr><td colspan="7"><div class="empty">Sin productos en el inventario.</div></td></tr>';
+    return;
+  }
+
+  tb.innerHTML = lista.map(p => {
+    const prov = state.proveedores.find(x => x.id === p.proveedorId);
+    const subtotal = (p.cantidad || 0) * (p.precio || 0);
+    return `
+      <tr>
+        <td><strong>${escapeHTML(p.nombre)}</strong></td>
+        <td class="qty">${fmt(p.cantidad)} ${p.unidad || ''}</td>
+        <td class="price">${fmtMoney(p.precio)}</td>
+        <td class="price"><strong>${fmtMoney(subtotal)}</strong></td>
+        <td>${prov ? escapeHTML(prov.nombre) : '<em style="opacity:.5">sin proveedor</em>'}</td>
+        <td>${prov ? `<span class="badge ${prov.categoria}">${prov.categoria}</span>` : '—'}</td>
+        <td>
+          <button class="btn-icon" onclick="editProducto('${p.id}')" title="Editar">✎</button>
+          <button class="btn-icon danger" onclick="deleteProducto('${p.id}')" title="Eliminar">✕</button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+// ============== MERMAS ==============
+function recalcMerma() {
+  const antes = parseFloat(document.getElementById('mermaPesoAntes').value) || 0;
+  const despues = parseFloat(document.getElementById('mermaPesoDespues').value) || 0;
+  const costo = parseFloat(document.getElementById('mermaCosto').value) || 0;
+
+  const calcAbs = document.getElementById('calcAbsoluta');
+  const calcPct = document.getElementById('calcPorcentaje');
+  const calcRend = document.getElementById('calcRendimiento');
+  const calcVal = document.getElementById('calcValor');
+  const items = document.querySelectorAll('.merma-calc-item');
+  items.forEach(it => it.classList.remove('alert'));
+
+  if (antes <= 0) {
+    calcAbs.textContent = '0,00 kg';
+    calcPct.textContent = '0%';
+    calcRend.textContent = '100%';
+    calcVal.textContent = '$0';
+    return;
+  }
+
+  const merma = Math.max(0, antes - despues);
+  const pct = (merma / antes) * 100;
+  const rend = 100 - pct;
+  const valor = merma * costo;
+
+  calcAbs.textContent = fmt(merma) + ' kg';
+  calcPct.textContent = pct.toFixed(1) + '%';
+  calcRend.textContent = rend.toFixed(1) + '%';
+  calcVal.textContent = fmtMoney(valor);
+
+  // Alertar si la merma supera 35% (típicamente alta para carnes)
+  if (pct > 35) {
+    items[1].classList.add('alert');
+    items[3].classList.add('alert');
+  }
+  if (despues > antes) {
+    items[0].classList.add('alert');
+  }
+}
+
+function saveMerma() {
+  const id = document.getElementById('mermaId').value;
+  const tipo = document.getElementById('mermaTipo').value;
+  const pesoAntes = parseFloat(document.getElementById('mermaPesoAntes').value) || 0;
+  const pesoDespues = parseFloat(document.getElementById('mermaPesoDespues').value) || 0;
+  const costo = parseFloat(document.getElementById('mermaCosto').value) || 0;
+  const fecha = document.getElementById('mermaFecha').value || new Date().toISOString().slice(0,10);
+  const motivo = document.getElementById('mermaMotivo').value.trim();
+
+  if (pesoAntes <= 0) { toast('Ingresa el peso antes de cocción', 'error'); return; }
+  if (pesoDespues < 0) { toast('Peso después no puede ser negativo', 'error'); return; }
+  if (pesoDespues > pesoAntes) {
+    if (!confirm('El peso después es mayor que antes. ¿Estás seguro? (esto sería ganancia, no merma)')) return;
+  }
+
+  const cantidad = Math.max(0, pesoAntes - pesoDespues); // merma absoluta
+  const porcentaje = pesoAntes > 0 ? (cantidad / pesoAntes) * 100 : 0;
+
+  if (id) {
+    const m = state.mermas.find(x => x.id === id);
+    Object.assign(m, { tipo, pesoAntes, pesoDespues, cantidad, porcentaje, costo, fecha, motivo });
+    toast('Merma actualizada');
+  } else {
+    state.mermas.push({ id: uid(), tipo, pesoAntes, pesoDespues, cantidad, porcentaje, costo, fecha, motivo });
+    toast('Merma registrada');
+  }
+
+  save();
+  renderAll();
+  toggleForm('formMerma');
+  // Reset calculadora
+  ['mermaPesoAntes','mermaPesoDespues','mermaCosto','mermaMotivo'].forEach(i => document.getElementById(i).value = '');
+  recalcMerma();
+}
+
+function editMerma(id) {
+  const m = state.mermas.find(x => x.id === id);
+  if (!m) return;
+  document.getElementById('mermaId').value = m.id;
+  document.getElementById('mermaTipo').value = m.tipo;
+  // Compatibilidad con registros antiguos que solo tenían "cantidad"
+  document.getElementById('mermaPesoAntes').value = m.pesoAntes != null ? m.pesoAntes : (m.cantidad || 0);
+  document.getElementById('mermaPesoDespues').value = m.pesoDespues != null ? m.pesoDespues : 0;
+  document.getElementById('mermaCosto').value = m.costo || '';
+  document.getElementById('mermaFecha').value = m.fecha;
+  document.getElementById('mermaMotivo').value = m.motivo || '';
+  document.getElementById('formMermaTitle').textContent = 'Editar merma de cocción';
+  const f = document.getElementById('formMerma');
+  if (!f.classList.contains('open')) f.classList.add('open');
+  recalcMerma();
+  f.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function deleteMerma(id) {
+  if (!confirm('¿Eliminar este registro de merma?')) return;
+  state.mermas = state.mermas.filter(x => x.id !== id);
+  save();
+  renderAll();
+  toast('Merma eliminada');
+}
+
+function renderMermas() {
+  // Resumen cards: muestra peso crudo, peso cocido y % promedio
+  const resumen = document.getElementById('mermasResumen');
+  resumen.innerHTML = TIPOS_MERMA.map(tipo => {
+    const items = state.mermas.filter(m => m.tipo === tipo);
+    const totalAntes = items.reduce((s, m) => s + (m.pesoAntes != null ? m.pesoAntes : (m.cantidad || 0)), 0);
+    const totalDespues = items.reduce((s, m) => s + (m.pesoDespues != null ? m.pesoDespues : 0), 0);
+    const totalMerma = items.reduce((s, m) => s + (m.cantidad || 0), 0);
+    const pctProm = totalAntes > 0 ? (totalMerma / totalAntes) * 100 : 0;
+    return `
+      <div class="merma-card" onclick="filterMermaTipo('${tipo}')">
+        <div class="merma-card-count">${items.length}</div>
+        <div class="merma-card-name">${tipo}</div>
+        <div class="merma-card-total">${fmt(totalMerma)}</div>
+        <div class="merma-card-unit">kg merma · ${pctProm.toFixed(1)}%</div>
+        <div style="margin-top:10px; padding-top:10px; border-top:1px dashed rgba(26,15,10,.2); font-family:'JetBrains Mono',monospace; font-size:10px; line-height:1.6;">
+          <div>Crudo: <strong>${fmt(totalAntes)} kg</strong></div>
+          <div>Cocido: <strong>${fmt(totalDespues)} kg</strong></div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  // Tabla
+  const tb = document.getElementById('tblMermas');
+  if (state.mermas.length === 0) {
+    tb.innerHTML = '<tr><td colspan="9"><div class="empty">Sin mermas registradas.</div></td></tr>';
+    return;
+  }
+
+  const sorted = [...state.mermas].sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
+  tb.innerHTML = sorted.map(m => {
+    const antes = m.pesoAntes != null ? m.pesoAntes : (m.cantidad || 0);
+    const despues = m.pesoDespues != null ? m.pesoDespues : 0;
+    const merma = m.cantidad || Math.max(0, antes - despues);
+    const pct = antes > 0 ? (merma / antes) * 100 : 0;
+    const valor = merma * (m.costo || 0);
+    return `
+      <tr>
+        <td class="qty">${m.fecha || '—'}</td>
+        <td><strong style="text-transform: capitalize;">${escapeHTML(m.tipo)}</strong></td>
+        <td class="qty">${fmt(antes)}</td>
+        <td class="qty">${fmt(despues)}</td>
+        <td class="qty"><strong style="color:var(--blood)">${fmt(merma)}</strong></td>
+        <td class="qty"><strong>${pct.toFixed(1)}%</strong></td>
+        <td class="price">${fmtMoney(valor)}</td>
+        <td>${escapeHTML(m.motivo || '—')}</td>
+        <td>
+          <button class="btn-icon" onclick="editMerma('${m.id}')" title="Editar">✎</button>
+          <button class="btn-icon danger" onclick="deleteMerma('${m.id}')" title="Eliminar">✕</button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function filterMermaTipo(tipo) {
+  document.getElementById('mermaTipo').value = tipo;
+  document.getElementById('mermaFecha').value = new Date().toISOString().slice(0,10);
+  if (!document.getElementById('formMerma').classList.contains('open')) {
+    toggleForm('formMerma');
+  }
+  recalcMerma();
+}
+
+// ============== STATS ==============
+function renderStats() {
+  document.getElementById('statProveedores').textContent = state.proveedores.length;
+  document.getElementById('statProductos').textContent = state.productos.length;
+  const inv = state.productos.reduce((s, p) => s + ((p.cantidad||0) * (p.precio||0)), 0);
+  document.getElementById('statInversion').textContent = fmtMoney(inv);
+  document.getElementById('statMermas').textContent = state.mermas.length;
+  const totMermas = state.mermas.reduce((s, m) => s + (m.cantidad || 0), 0);
+  document.getElementById('statMermasKg').textContent = fmt(totMermas);
+}
+
+// ============== EXPORT ==============
+function exportToExcel() {
+  if (state.productos.length === 0 && state.mermas.length === 0 && state.proveedores.length === 0) {
+    toast('No hay datos para exportar', 'error');
+    return;
+  }
+
+  const wb = XLSX.utils.book_new();
+  const today = new Date().toLocaleDateString('es-CO');
+
+  // === RESUMEN ===
+  const totalInv = state.productos.reduce((s, p) => s + ((p.cantidad||0)*(p.precio||0)), 0);
+
+  const resumen = [
+    ['INFORME DE INVENTARIO'],
+    ['Fecha de generación:', today],
+    [],
+    ['INDICADORES GENERALES'],
+    ['Total de proveedores', state.proveedores.length],
+    ['Total de productos', state.productos.length],
+    ['Inversión total en inventario', totalInv],
+    ['Total de registros de mermas', state.mermas.length]
+  ];
+
+  const ws1 = XLSX.utils.aoa_to_sheet(resumen);
+  ws1['!cols'] = [{wch: 35}, {wch: 18}];
+  XLSX.utils.book_append_sheet(wb, ws1, 'Resumen');
+
+  // === PROVEEDORES ===
+  const provHeader = [['ID','Nombre','Categoría','Teléfono','Contacto','# Productos']];
+  const provRows = state.proveedores.map(p => [
+    p.id,
+    p.nombre,
+    p.categoria,
+    p.telefono || '',
+    p.contacto || '',
+    state.productos.filter(pr => pr.proveedorId === p.id).length
+  ]);
+  const ws2 = XLSX.utils.aoa_to_sheet([...provHeader, ...provRows]);
+  ws2['!cols'] = [{wch: 18},{wch: 30},{wch: 15},{wch: 18},{wch: 22},{wch: 12}];
+  XLSX.utils.book_append_sheet(wb, ws2, 'Proveedores');
+
+  // === PRODUCTOS ===
+  const prodHeader = [['Producto','Cantidad','Unidad','Precio Unit.','Subtotal','Proveedor','Categoría','Fecha']];
+  const prodRows = state.productos.map(p => {
+    const prov = state.proveedores.find(x => x.id === p.proveedorId);
+    return [
+      p.nombre,
+      p.cantidad,
+      p.unidad || '',
+      p.precio,
+      (p.cantidad||0)*(p.precio||0),
+      prov ? prov.nombre : '',
+      prov ? prov.categoria : '',
+      p.fecha ? p.fecha.slice(0,10) : ''
+    ];
+  });
+  prodRows.push(['','','','TOTAL', totalInv,'','','']);
+  const ws3 = XLSX.utils.aoa_to_sheet([...prodHeader, ...prodRows]);
+  ws3['!cols'] = [{wch: 28},{wch: 12},{wch: 10},{wch: 14},{wch: 14},{wch: 28},{wch: 14},{wch: 12}];
+  XLSX.utils.book_append_sheet(wb, ws3, 'Inventario');
+
+  // === MERMAS ===
+  const mermaHeader = [['Fecha','Tipo','Peso Antes (kg)','Peso Después (kg)','Merma (kg)','% Pérdida','Costo/kg','Valor Perdido','Motivo']];
+  const mermaRows = state.mermas
+    .slice()
+    .sort((a,b) => (b.fecha||'').localeCompare(a.fecha||''))
+    .map(m => {
+      const antes = m.pesoAntes != null ? m.pesoAntes : (m.cantidad || 0);
+      const despues = m.pesoDespues != null ? m.pesoDespues : 0;
+      const merma = m.cantidad || Math.max(0, antes - despues);
+      const pct = antes > 0 ? (merma / antes * 100) : 0;
+      const valor = merma * (m.costo || 0);
+      return [m.fecha || '', m.tipo, antes, despues, merma, `${pct.toFixed(1)}%`, m.costo || 0, valor, m.motivo || ''];
+    });
+  const ws4 = XLSX.utils.aoa_to_sheet([...mermaHeader, ...mermaRows]);
+  ws4['!cols'] = [{wch: 12},{wch: 14},{wch: 16},{wch: 16},{wch: 14},{wch: 12},{wch: 12},{wch: 16},{wch: 40}];
+  XLSX.utils.book_append_sheet(wb, ws4, 'Mermas');
+
+  const fileName = `Inventario_${new Date().toISOString().slice(0,10)}.xlsx`;
+  XLSX.writeFile(wb, fileName);
+  toast('Excel descargado correctamente');
+}
+
+function exportBackup() {
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `Backup_Inventario_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('Backup descargado');
+}
+
+function importBackup(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if (!data.proveedores || !data.productos || !data.mermas) throw new Error('Archivo inválido');
+      if (!confirm('¿Restaurar los datos? Esto reemplazará los datos actuales.')) return;
+      state = data;
+      save();
+      renderAll();
+      toast('Datos restaurados');
+    } catch(err) {
+      toast('Archivo inválido', 'error');
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+}
+
+function clearAllData() {
+  if (!confirm('⚠ ATENCIÓN: Esto borrará TODOS los datos (proveedores, productos y mermas). ¿Continuar?')) return;
+  if (!confirm('¿Estás seguro? Esta acción no se puede deshacer.')) return;
+  state = { proveedores: [], productos: [], mermas: [] };
+  save();
+  load(); // re-seed defaults
+  renderAll();
+  toast('Datos eliminados');
+}
+
+// ============== UTILS ==============
+function escapeHTML(s) {
+  return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function renderAll() {
+  refreshProveedorSelects();
+  renderProveedores();
+  renderProductos();
+  renderMermas();
+  renderStats();
+}
+
+// ============== ESCÁNER OCR ==============
+let scanFile = null;
+let reviewItems = [];
+
+// Cambio entre modos foto / texto
+document.querySelectorAll('.scan-mode').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.scan-mode').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.scan-pane').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('scan' + btn.dataset.mode.charAt(0).toUpperCase() + btn.dataset.mode.slice(1)).classList.add('active');
+  });
+});
+
+// Drag & drop + click + paste
+function setupDropzone() {
+  const dz = document.getElementById('dropzone');
+  const fi = document.getElementById('fileInput');
+  if (!dz || !fi) return;
+
+  dz.addEventListener('click', (e) => {
+    if (e.target.tagName === 'BUTTON') return;
+    fi.click();
+  });
+
+  dz.addEventListener('dragover', e => {
+    e.preventDefault();
+    dz.classList.add('drag-over');
+  });
+  dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+  dz.addEventListener('drop', e => {
+    e.preventDefault();
+    dz.classList.remove('drag-over');
+    if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+  });
+
+  fi.addEventListener('change', e => {
+    if (e.target.files.length) handleFile(e.target.files[0]);
+  });
+
+  // Paste (cuando estés en la pestaña escanear)
+  document.addEventListener('paste', e => {
+    if (!document.getElementById('panel-escanear').classList.contains('active')) return;
+    if (!document.getElementById('scanFoto').classList.contains('active')) return;
+    const items = e.clipboardData.items;
+    for (const item of items) {
+      if (item.type.startsWith('image/')) {
+        handleFile(item.getAsFile());
+        break;
+      }
+    }
+  });
+}
+
+function handleFile(file) {
+  if (!file || !file.type.startsWith('image/')) {
+    toast('Solo imágenes (jpg, png, etc.)', 'error');
+    return;
+  }
+  scanFile = file;
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById('previewImg').src = e.target.result;
+    document.querySelector('.dropzone-content').style.display = 'none';
+    document.getElementById('dropzonePreview').style.display = 'block';
+    document.getElementById('scanActions').style.display = 'flex';
+  };
+  reader.readAsDataURL(file);
+}
+
+function resetScanFoto() {
+  scanFile = null;
+  document.getElementById('fileInput').value = '';
+  document.querySelector('.dropzone-content').style.display = 'block';
+  document.getElementById('dropzonePreview').style.display = 'none';
+  document.getElementById('scanActions').style.display = 'none';
+  document.getElementById('scanProgress').style.display = 'none';
+  document.getElementById('ocrRaw').style.display = 'none';
+}
+
+// OCR con Tesseract
+document.addEventListener('click', e => {
+  if (e.target.id === 'btnProcesarOCR') procesarOCR();
+});
+
+async function procesarOCR() {
+  if (!scanFile) return;
+  if (typeof Tesseract === 'undefined') {
+    toast('Cargando librería OCR... reintenta en unos segundos', 'error');
+    return;
+  }
+  const progressDiv = document.getElementById('scanProgress');
+  const fill = document.getElementById('progressFill');
+  const text = document.getElementById('progressText');
+  progressDiv.style.display = 'block';
+  document.getElementById('btnProcesarOCR').disabled = true;
+  fill.style.width = '0%';
+  text.textContent = 'Iniciando OCR...';
+
+  try {
+    const result = await Tesseract.recognize(scanFile, 'spa+eng', {
+      logger: m => {
+        if (m.status === 'recognizing text') {
+          const pct = Math.round(m.progress * 100);
+          fill.style.width = pct + '%';
+          text.textContent = `Reconociendo texto... ${pct}%`;
+        } else {
+          text.textContent = m.status.charAt(0).toUpperCase() + m.status.slice(1);
+        }
+      }
+    });
+    fill.style.width = '100%';
+    text.textContent = 'Listo. Revisa el texto detectado.';
+    document.getElementById('ocrRaw').style.display = 'block';
+    document.getElementById('ocrRawText').value = result.data.text;
+    // Auto-extraer
+    extraerDeTexto(result.data.text);
+  } catch (err) {
+    console.error(err);
+    toast('Error en OCR. Intenta con otra imagen.', 'error');
+  } finally {
+    document.getElementById('btnProcesarOCR').disabled = false;
+  }
+}
+
+// Parser inteligente: extrae items de texto crudo
+function extraerDeTexto(texto) {
+  if (!texto || !texto.trim()) {
+    toast('No hay texto para extraer', 'error');
+    return;
+  }
+  const lineas = texto.split('\n').map(l => l.trim()).filter(l => l.length > 2);
+  const items = [];
+
+  // Patrones para detectar cantidad y precio
+  // Acepta: "5 kg", "5kg", "5,5 kg", "5.5kg", etc.
+  const reCantidad = /(\d+[.,]?\d*)\s*(kg|kilos?|gr?|gramos?|lb|libras?|und|unid|unidades?|cajas?|canastas?|pacas?|x)\b/i;
+  // Precio: cifras grandes con o sin símbolo
+  const rePrecio = /\$?\s*(\d{1,3}(?:[.,]\d{3})+|\d{4,})(?:[.,]\d{1,2})?\b/g;
+  // Línea típica: "Nombre cantidad unidad precio"
+  // O: "Nombre x cantidad precio"
+
+  for (const linea of lineas) {
+    // Saltar headers obvios
+    if (/^(factura|fecha|total|subtotal|iva|cliente|nit|direcc|tel|n[°o]\.?|cant|descripc|valor|unit|item)/i.test(linea)) continue;
+    if (linea.length < 4) continue;
+
+    const cantMatch = linea.match(reCantidad);
+    const precioMatches = [...linea.matchAll(rePrecio)];
+
+    let cantidad = 0;
+    let unidad = 'kg';
+    let precio = 0;
+    let nombre = linea;
+
+    if (cantMatch) {
+      cantidad = parseFloat(cantMatch[1].replace(',', '.')) || 0;
+      const u = cantMatch[2].toLowerCase();
+      if (u.startsWith('kg') || u.startsWith('kilo')) unidad = 'kg';
+      else if (u === 'g' || u.startsWith('gr')) unidad = 'g';
+      else if (u.startsWith('lb') || u.startsWith('libra')) unidad = 'lb';
+      else if (u.startsWith('caja')) unidad = 'caja';
+      else if (u.startsWith('canasta')) unidad = 'canasta';
+      else if (u.startsWith('paca')) unidad = 'paca';
+      else unidad = 'unidad';
+      nombre = nombre.replace(cantMatch[0], '').trim();
+    }
+
+    if (precioMatches.length) {
+      // Toma el último número grande como precio (suele ser el total o unitario al final)
+      const ultimo = precioMatches[precioMatches.length - 1];
+      const num = ultimo[1].replace(/[.,]/g, '');
+      precio = parseInt(num) || 0;
+      // Si hay 2 precios y el primero es menor, probablemente sea unitario
+      if (precioMatches.length >= 2) {
+        const primero = parseInt(precioMatches[0][1].replace(/[.,]/g, '')) || 0;
+        if (primero > 0 && primero < precio) {
+          // Verificar si primero × cantidad ≈ precio (entonces primero es unitario)
+          if (cantidad > 0 && Math.abs(primero * cantidad - precio) < precio * 0.1) {
+            precio = primero;
+          }
+        }
+      }
+      // Limpiar nombre quitando los precios
+      precioMatches.forEach(pm => {
+        nombre = nombre.replace(pm[0], '').trim();
+      });
+    }
+
+    // Limpiar nombre: quitar caracteres raros, números sueltos al final
+    nombre = nombre.replace(/[|*_]+/g, ' ').replace(/\s+/g, ' ').trim();
+    nombre = nombre.replace(/^[\d\s.,$\-]+/, '').replace(/[\d\s.,$\-]+$/, '').trim();
+
+    if (nombre.length < 2) continue;
+    if (cantidad === 0 && precio === 0) continue; // Sin datos útiles
+
+    items.push({
+      nombre: nombre.replace(/\s+/g, ' ').trim(),
+      cantidad: cantidad || 1,
+      unidad,
+      precio,
+      checked: true
+    });
+  }
+
+  if (!items.length) {
+    toast('No se detectaron items. Edita el texto manualmente.', 'error');
+    return;
+  }
+
+  reviewItems = items;
+  renderReview();
+  toast(`${items.length} items detectados. Revísalos antes de importar.`);
+  document.getElementById('reviewSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function renderReview() {
+  const tbody = document.getElementById('reviewBody');
+  document.getElementById('reviewSection').style.display = 'block';
+
+  tbody.innerHTML = reviewItems.map((it, i) => `
+    <tr class="${it.checked ? '' : 'unchecked'}" data-i="${i}">
+      <td><input type="checkbox" ${it.checked ? 'checked' : ''} onchange="toggleReview(${i})"></td>
+      <td><input type="text" value="${escapeHTML(it.nombre)}" oninput="updateReview(${i},'nombre',this.value)"></td>
+      <td><input type="number" step="0.01" min="0" value="${it.cantidad}" oninput="updateReview(${i},'cantidad',parseFloat(this.value)||0)"></td>
+      <td>
+        <select onchange="updateReview(${i},'unidad',this.value)">
+          ${['kg','g','lb','unidad','caja','canasta','paca'].map(u =>
+            `<option value="${u}" ${it.unidad===u?'selected':''}>${u}</option>`
+          ).join('')}
+        </select>
+      </td>
+      <td><input type="number" step="1" min="0" value="${it.precio}" oninput="updateReview(${i},'precio',parseInt(this.value)||0)"></td>
+      <td><button class="btn-row-delete" onclick="removeReview(${i})">×</button></td>
+    </tr>
+  `).join('');
+}
+
+function toggleReview(i) {
+  reviewItems[i].checked = !reviewItems[i].checked;
+  renderReview();
+}
+function updateReview(i, field, val) {
+  reviewItems[i][field] = val;
+}
+function removeReview(i) {
+  reviewItems.splice(i, 1);
+  renderReview();
+}
+function addReviewRow() {
+  reviewItems.push({ nombre:'', cantidad:1, unidad:'kg', precio:0, checked:true });
+  renderReview();
+}
+
+function cancelReview() {
+  reviewItems = [];
+  document.getElementById('reviewSection').style.display = 'none';
+  resetScanFoto();
+  document.getElementById('scanTextoInput').value = '';
+}
+
+function confirmarImportacion() {
+  // Determinar proveedor según el modo activo
+  const modoFoto = document.getElementById('scanFoto').classList.contains('active');
+  const provId = modoFoto
+    ? document.getElementById('scanProveedor').value
+    : document.getElementById('scanProveedorTxt').value;
+  const fecha = modoFoto
+    ? document.getElementById('scanFecha').value
+    : document.getElementById('scanFechaTxt').value;
+
+  if (!provId) {
+    toast('Selecciona un proveedor antes de importar', 'error');
+    return;
+  }
+  const fechaFinal = fecha || new Date().toISOString().slice(0,10);
+  const aImportar = reviewItems.filter(it => it.checked && it.nombre.trim());
+  if (!aImportar.length) {
+    toast('Marca al menos un item para importar', 'error');
+    return;
+  }
+
+  aImportar.forEach(it => {
+    state.productos.push({
+      id: uid(),
+      nombre: it.nombre.trim(),
+      cantidad: it.cantidad,
+      unidad: it.unidad,
+      precio: it.precio,
+      proveedorId: provId,
+      fecha: fechaFinal
+    });
+  });
+  save();
+  renderAll();
+  toast(`✓ ${aImportar.length} producto(s) importados al inventario`);
+  cancelReview();
+
+  // Llevar a la pestaña inventario
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelector('[data-panel="productos"]').classList.add('active');
+  document.getElementById('panel-productos').classList.add('active');
+}
+
+// ============== INIT ==============
+function init() {
+  const today = new Date().toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' });
+  document.getElementById('todayDate').textContent = today.toUpperCase();
+  const isoToday = new Date().toISOString().slice(0,10);
+  document.getElementById('mermaFecha').value = isoToday;
+  const sf = document.getElementById('scanFecha');
+  const sft = document.getElementById('scanFechaTxt');
+  if (sf) sf.value = isoToday;
+  if (sft) sft.value = isoToday;
+  load();
+  renderAll();
+  setupDropzone();
+}
+
+init();
+</script>
+</body>
+</html>
