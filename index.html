@@ -3,45 +3,65 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Inventario · Compras y Mermas</title>
+<title>Taco Parado · Inventario</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,800;9..144,900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.0.5/dist/tesseract.min.js"></script>
 <style>
   :root {
-    --ink: #1a0f0a;
-    --paper: #f5ede0;
-    --paper-dark: #ebe0cc;
-    --blood: #8b1a1a;
-    --blood-dark: #5e1010;
-    --mustard: #c89211;
-    --olive: #5a6b3c;
-    --cream: #fbf6ec;
-    --line: #2a1a0f;
-    --shadow: rgba(26, 15, 10, 0.15);
+    --ink: #0d2451;
+    --ink-soft: #1e3a8a;
+    --paper: #fff7ed;
+    --paper-dark: #fed7aa;
+    --blood: #f97316;
+    --blood-dark: #ea580c;
+    --mustard: #fbbf24;
+    --olive: #1e3a8a;
+    --cream: #ffffff;
+    --line: #1e3a8a;
+    --shadow: rgba(30, 58, 138, 0.15);
+    --orange-bg: #fb923c;
+    --blue-deep: #1e40af;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
   html, body {
-    background: var(--paper);
+    background: linear-gradient(135deg, #fb923c 0%, #f97316 50%, #ea580c 100%);
+    background-attachment: fixed;
     color: var(--ink);
     font-family: 'Inter', sans-serif;
     min-height: 100vh;
-    background-image:
-      radial-gradient(circle at 20% 10%, rgba(200, 146, 17, 0.08) 0%, transparent 40%),
-      radial-gradient(circle at 80% 80%, rgba(139, 26, 26, 0.06) 0%, transparent 40%),
-      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 0.1 0 0 0 0 0.06 0 0 0 0 0.04 0 0 0 0.04 0'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23n)'/%3E%3C/svg%3E");
   }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: repeating-linear-gradient(
+      135deg,
+      transparent 0,
+      transparent 60px,
+      rgba(255, 255, 255, 0.05) 60px,
+      rgba(255, 255, 255, 0.05) 62px
+    );
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  body > * { position: relative; z-index: 1; }
 
   /* === HEADER === */
   header {
-    border-bottom: 3px double var(--line);
-    padding: 32px 40px 24px;
     background: var(--cream);
+    border: 4px solid var(--ink);
+    border-radius: 24px;
+    padding: 28px 36px 20px;
+    margin: 16px;
     position: relative;
+    box-shadow: 0 8px 0 rgba(13, 36, 81, 0.25);
   }
 
   .header-top {
@@ -54,43 +74,63 @@
 
   .brand {
     display: flex;
-    align-items: baseline;
-    gap: 16px;
+    align-items: center;
+    gap: 14px;
+  }
+
+  /* Logo circular tipo Taco Parado */
+  .brand-logo {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--blood);
+    border: 3px solid var(--ink);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    flex-shrink: 0;
+    box-shadow: 0 3px 0 rgba(13, 36, 81, 0.3);
+  }
+
+  .brand-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
   }
 
   .brand-mark {
-    font-family: 'Fraunces', serif;
-    font-weight: 900;
-    font-size: 52px;
+    font-family: 'Bungee', 'Inter', sans-serif;
+    font-weight: 400;
+    font-size: 36px;
     line-height: 0.9;
-    letter-spacing: -0.03em;
-    color: var(--blood);
-    font-style: italic;
+    letter-spacing: 0.01em;
+    color: var(--ink);
   }
 
   .brand-mark span {
-    color: var(--ink);
-    font-style: normal;
+    color: var(--blood);
   }
 
   .brand-sub {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 11px;
+    font-family: 'Bungee', monospace;
+    font-size: 10px;
     text-transform: uppercase;
-    letter-spacing: 0.2em;
+    letter-spacing: 0.25em;
     color: var(--ink);
     opacity: 0.7;
-    border-left: 2px solid var(--blood);
-    padding-left: 12px;
+    margin-top: 4px;
   }
 
   .meta-strip {
     display: flex;
-    gap: 24px;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 11px;
+    gap: 18px;
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
     text-transform: uppercase;
-    letter-spacing: 0.15em;
+    letter-spacing: 0.1em;
+    font-weight: 700;
+    color: var(--ink);
   }
 
   .meta-strip div span {
@@ -98,39 +138,49 @@
     font-size: 9px;
     opacity: 0.6;
     margin-bottom: 2px;
+    font-weight: 500;
   }
 
   /* === DASHBOARD === */
   .dashboard {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 0;
-    border-top: 1px solid var(--line);
-    margin-top: 28px;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 2px dashed rgba(30, 58, 138, 0.25);
   }
 
   .stat {
-    padding: 18px 0;
-    border-right: 1px solid rgba(26, 15, 10, 0.15);
+    padding: 14px 16px;
+    background: var(--paper);
+    border: 2px solid var(--ink);
+    border-radius: 14px;
+    border-left: 6px solid var(--blood);
   }
 
-  .stat:last-child { border-right: none; }
+  .stat:nth-child(2) { border-left-color: var(--ink-soft); }
+  .stat:nth-child(3) { border-left-color: var(--mustard); }
+  .stat:nth-child(4) { border-left-color: var(--blood-dark); }
+  .stat:nth-child(5) { border-left-color: var(--ink); }
 
   .stat-label {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'Inter', sans-serif;
     font-size: 10px;
     text-transform: uppercase;
-    letter-spacing: 0.2em;
-    opacity: 0.7;
+    letter-spacing: 0.12em;
+    font-weight: 700;
+    opacity: 0.65;
     margin-bottom: 6px;
   }
 
   .stat-value {
-    font-family: 'Fraunces', serif;
-    font-size: 32px;
-    font-weight: 800;
+    font-family: 'Bungee', sans-serif;
+    font-size: 28px;
+    font-weight: 900;
     letter-spacing: -0.02em;
     color: var(--blood);
+    font-family: 'Inter', sans-serif;
   }
 
   .stat-value.ink { color: var(--ink); }
@@ -139,49 +189,49 @@
   /* === NAV TABS === */
   nav.tabs {
     display: flex;
-    gap: 0;
-    padding: 0 40px;
-    background: var(--paper-dark);
-    border-bottom: 1px solid var(--line);
+    gap: 8px;
+    padding: 0 16px;
+    margin: 0 16px 16px;
     overflow-x: auto;
+    flex-wrap: wrap;
   }
 
   .tab {
-    background: none;
-    border: none;
-    padding: 18px 28px;
-    font-family: 'JetBrains Mono', monospace;
+    background: var(--cream);
+    border: 3px solid var(--ink);
+    border-radius: 14px;
+    padding: 12px 22px;
+    font-family: 'Inter', sans-serif;
     font-size: 12px;
     text-transform: uppercase;
-    letter-spacing: 0.18em;
+    letter-spacing: 0.08em;
     color: var(--ink);
+    font-weight: 800;
     cursor: pointer;
     position: relative;
-    transition: all 0.2s;
+    transition: all 0.15s;
     white-space: nowrap;
+    box-shadow: 0 4px 0 rgba(13, 36, 81, 0.3);
   }
 
-  .tab:hover { background: rgba(139, 26, 26, 0.05); }
+  .tab:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 0 rgba(13, 36, 81, 0.3);
+  }
 
   .tab.active {
-    background: var(--paper);
-    color: var(--blood);
-    font-weight: 700;
+    background: var(--blood);
+    color: white;
+    border-color: var(--ink);
   }
 
-  .tab.active::after {
-    content: '';
-    position: absolute;
-    bottom: -1px;
-    left: 0;
-    right: 0;
-    height: 3px;
-    background: var(--blood);
+  .tab.active:hover {
+    transform: translateY(-2px);
   }
 
   /* === MAIN === */
   main {
-    padding: 40px;
+    padding: 16px;
     max-width: 1400px;
     margin: 0 auto;
   }
@@ -206,93 +256,107 @@
   }
 
   .panel-title {
-    font-family: 'Fraunces', serif;
-    font-size: 36px;
-    font-weight: 800;
-    letter-spacing: -0.02em;
-    line-height: 1;
+    font-family: 'Bungee', 'Inter', sans-serif;
+    font-size: 28px;
+    font-weight: 400;
+    letter-spacing: 0;
+    line-height: 1.1;
+    color: var(--cream);
+    text-shadow: 0 3px 0 rgba(13, 36, 81, 0.4);
   }
 
   .panel-title em {
-    color: var(--blood);
-    font-style: italic;
-    font-weight: 900;
+    color: var(--ink);
+    font-style: normal;
+    background: var(--mustard);
+    padding: 2px 12px;
+    border-radius: 8px;
+    border: 2px solid var(--ink);
+    display: inline-block;
+    text-shadow: none;
   }
 
   .panel-sub {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 10px;
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
     text-transform: uppercase;
-    letter-spacing: 0.2em;
-    opacity: 0.6;
-    margin-top: 4px;
+    letter-spacing: 0.05em;
+    color: var(--cream);
+    opacity: 0.95;
+    margin-top: 8px;
+    font-weight: 500;
   }
 
   /* === BUTTONS === */
   .btn {
     background: var(--ink);
-    color: var(--paper);
-    border: none;
+    color: white;
+    border: 2.5px solid var(--ink);
+    border-radius: 12px;
     padding: 12px 22px;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 11px;
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
     text-transform: uppercase;
-    letter-spacing: 0.15em;
+    letter-spacing: 0.08em;
     cursor: pointer;
     transition: all 0.15s;
-    font-weight: 500;
-    border: 2px solid var(--ink);
+    font-weight: 800;
+    box-shadow: 0 4px 0 rgba(13, 36, 81, 0.4);
   }
 
   .btn:hover {
-    background: var(--blood);
-    border-color: var(--blood);
-    transform: translate(-1px, -1px);
-    box-shadow: 3px 3px 0 var(--ink);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 0 rgba(13, 36, 81, 0.4);
+  }
+
+  .btn:active {
+    transform: translateY(2px);
+    box-shadow: 0 2px 0 rgba(13, 36, 81, 0.4);
   }
 
   .btn-primary {
     background: var(--blood);
-    border-color: var(--blood);
+    border-color: var(--ink);
   }
 
   .btn-primary:hover {
     background: var(--blood-dark);
-    border-color: var(--blood-dark);
   }
 
   .btn-export {
-    background: var(--olive);
-    border-color: var(--olive);
+    background: var(--mustard);
+    color: var(--ink);
+    border-color: var(--ink);
   }
 
   .btn-export:hover {
-    background: #3d4a26;
-    border-color: #3d4a26;
+    background: #f59e0b;
   }
 
   .btn-ghost {
-    background: transparent;
+    background: var(--cream);
     color: var(--ink);
+    border-color: var(--ink);
   }
 
   .btn-ghost:hover {
-    background: var(--ink);
-    color: var(--paper);
+    background: var(--paper);
   }
 
   .btn-sm {
-    padding: 6px 12px;
+    padding: 8px 14px;
     font-size: 10px;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.06em;
+    border-radius: 10px;
   }
 
   .btn-icon {
-    background: transparent;
-    border: 1px solid var(--line);
+    background: var(--cream);
+    border: 2px solid var(--ink);
+    border-radius: 8px;
     color: var(--ink);
-    width: 32px;
-    height: 32px;
+    width: 34px;
+    height: 34px;
     padding: 0;
     display: inline-flex;
     align-items: center;
@@ -301,11 +365,13 @@
     font-size: 14px;
     margin: 0 2px;
     transition: all 0.15s;
+    font-weight: 700;
   }
 
   .btn-icon:hover {
     background: var(--ink);
-    color: var(--paper);
+    color: white;
+    transform: translateY(-1px);
   }
 
   .btn-icon.danger:hover {
@@ -318,22 +384,24 @@
   /* === FORM === */
   .form-card {
     background: var(--cream);
-    border: 1px solid var(--line);
+    border: 3px solid var(--ink);
+    border-radius: 18px;
     padding: 24px;
-    margin-bottom: 28px;
-    box-shadow: 4px 4px 0 var(--ink);
+    margin-bottom: 24px;
+    box-shadow: 0 6px 0 rgba(13, 36, 81, 0.3);
     display: none;
   }
 
   .form-card.open { display: block; }
 
   .form-card-title {
-    font-family: 'Fraunces', serif;
-    font-size: 20px;
-    font-weight: 700;
+    font-family: 'Bungee', 'Inter', sans-serif;
+    font-size: 18px;
+    font-weight: 400;
     margin-bottom: 18px;
-    border-bottom: 1px dashed var(--line);
-    padding-bottom: 10px;
+    border-bottom: 2px dashed rgba(30, 58, 138, 0.25);
+    padding-bottom: 12px;
+    color: var(--ink);
   }
 
   .form-grid {
@@ -345,41 +413,47 @@
 
   .field label {
     display: block;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 10px;
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
     text-transform: uppercase;
-    letter-spacing: 0.15em;
+    letter-spacing: 0.08em;
     margin-bottom: 6px;
     color: var(--ink);
-    opacity: 0.7;
+    font-weight: 700;
   }
 
   .field input,
   .field select {
     width: 100%;
-    padding: 10px 12px;
-    border: 1px solid var(--line);
+    padding: 11px 14px;
+    border: 2px solid var(--ink);
+    border-radius: 10px;
     background: var(--paper);
     font-family: 'Inter', sans-serif;
     font-size: 14px;
     color: var(--ink);
     transition: all 0.15s;
+    font-weight: 500;
   }
 
   .field input:focus,
   .field select:focus {
     outline: none;
     border-color: var(--blood);
-    box-shadow: 0 0 0 3px rgba(139, 26, 26, 0.15);
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.25);
+    background: white;
   }
 
   /* === TABLE === */
   .table-wrap {
     background: var(--cream);
-    border: 1px solid var(--line);
-    overflow-x: auto;
-    box-shadow: 4px 4px 0 var(--ink);
+    border: 3px solid var(--ink);
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 6px 0 rgba(13, 36, 81, 0.3);
   }
+
+  .table-wrap > div { overflow-x: auto; }
 
   table {
     width: 100%;
@@ -389,134 +463,143 @@
 
   thead {
     background: var(--ink);
-    color: var(--paper);
+    color: white;
   }
 
   thead th {
     padding: 14px 16px;
     text-align: left;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 10px;
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
     text-transform: uppercase;
-    letter-spacing: 0.18em;
-    font-weight: 500;
-    border-right: 1px solid rgba(245, 237, 224, 0.15);
+    letter-spacing: 0.08em;
+    font-weight: 700;
+    border-right: 1px solid rgba(255, 255, 255, 0.12);
   }
 
   thead th:last-child { border-right: none; text-align: center; }
 
   tbody tr {
-    border-bottom: 1px solid rgba(26, 15, 10, 0.1);
+    border-bottom: 1px solid rgba(30, 58, 138, 0.08);
     transition: background 0.15s;
   }
 
-  tbody tr:hover { background: rgba(139, 26, 26, 0.04); }
-  tbody tr:nth-child(even) { background: rgba(26, 15, 10, 0.02); }
-  tbody tr:nth-child(even):hover { background: rgba(139, 26, 26, 0.04); }
+  tbody tr:hover { background: rgba(249, 115, 22, 0.06); }
+  tbody tr:nth-child(even) { background: rgba(30, 58, 138, 0.025); }
+  tbody tr:nth-child(even):hover { background: rgba(249, 115, 22, 0.06); }
 
   tbody td {
     padding: 14px 16px;
-    border-right: 1px solid rgba(26, 15, 10, 0.06);
+    border-right: 1px solid rgba(30, 58, 138, 0.05);
     vertical-align: middle;
   }
 
   tbody td:last-child { border-right: none; text-align: center; white-space: nowrap; }
 
   .price {
-    font-family: 'JetBrains Mono', monospace;
-    font-weight: 500;
-    color: var(--blood);
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    color: var(--blood-dark);
   }
 
   .qty {
-    font-family: 'JetBrains Mono', monospace;
-    font-weight: 500;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
   }
 
   .badge {
     display: inline-block;
-    padding: 3px 10px;
-    font-family: 'JetBrains Mono', monospace;
+    padding: 4px 12px;
+    font-family: 'Inter', sans-serif;
     font-size: 10px;
     text-transform: uppercase;
-    letter-spacing: 0.1em;
-    border: 1px solid var(--line);
+    letter-spacing: 0.06em;
+    font-weight: 800;
+    border: 2px solid var(--ink);
+    border-radius: 8px;
     background: var(--paper);
+    color: var(--ink);
   }
 
-  .badge.carnes { background: var(--blood); color: var(--paper); border-color: var(--blood); }
-  .badge.quesera { background: var(--mustard); color: var(--ink); border-color: var(--mustard); }
-  .badge.fruver { background: var(--olive); color: var(--paper); border-color: var(--olive); }
+  .badge.carnes { background: var(--blood); color: white; }
+  .badge.quesera { background: var(--mustard); color: var(--ink); }
+  .badge.fruver { background: #65a30d; color: white; }
+  .badge.otro { background: var(--ink-soft); color: white; }
 
   .empty {
     text-align: center;
     padding: 60px 20px;
     color: var(--ink);
     opacity: 0.5;
-    font-family: 'Fraunces', serif;
-    font-style: italic;
-    font-size: 18px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 16px;
   }
 
   /* === MERMAS === */
   .mermas-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 16px;
+    gap: 14px;
     margin-bottom: 28px;
   }
 
   .merma-card {
     background: var(--cream);
-    border: 1px solid var(--line);
-    padding: 20px;
+    border: 3px solid var(--ink);
+    border-radius: 16px;
+    padding: 18px;
     position: relative;
     transition: all 0.2s;
     cursor: pointer;
-    box-shadow: 3px 3px 0 var(--ink);
+    box-shadow: 0 5px 0 rgba(13, 36, 81, 0.3);
   }
 
   .merma-card:hover {
-    transform: translate(-2px, -2px);
-    box-shadow: 5px 5px 0 var(--ink);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 0 rgba(13, 36, 81, 0.3);
+  }
   }
 
   .merma-card-name {
-    font-family: 'Fraunces', serif;
-    font-size: 22px;
-    font-weight: 700;
-    text-transform: capitalize;
+    font-family: 'Bungee', 'Inter', sans-serif;
+    font-size: 18px;
+    font-weight: 400;
+    text-transform: uppercase;
     color: var(--ink);
     margin-bottom: 8px;
-    letter-spacing: -0.01em;
+    letter-spacing: 0;
   }
 
   .merma-card-total {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 28px;
-    font-weight: 700;
+    font-family: 'Inter', sans-serif;
+    font-size: 32px;
+    font-weight: 900;
     color: var(--blood);
     line-height: 1;
   }
 
   .merma-card-unit {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 10px;
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
     text-transform: uppercase;
-    letter-spacing: 0.15em;
-    opacity: 0.6;
+    letter-spacing: 0.05em;
+    opacity: 0.7;
     margin-top: 4px;
+    font-weight: 600;
   }
 
   .merma-card-count {
     position: absolute;
-    top: 12px;
-    right: 12px;
+    top: 10px;
+    right: 10px;
     background: var(--ink);
-    color: var(--paper);
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 10px;
-    padding: 2px 8px;
+    color: white;
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-weight: 800;
   }
 
   .merma-calc {
@@ -524,27 +607,30 @@
     grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
     gap: 0;
     margin: 18px 0;
-    border: 1.5px solid var(--line);
-    background: var(--cream);
+    border: 2.5px solid var(--ink);
+    border-radius: 14px;
+    background: var(--paper);
+    overflow: hidden;
   }
   .merma-calc-item {
-    padding: 14px 16px;
-    border-right: 1px solid rgba(26, 15, 10, 0.15);
+    padding: 16px;
+    border-right: 1px solid rgba(30, 58, 138, 0.15);
     text-align: center;
   }
   .merma-calc-item:last-child { border-right: none; }
   .merma-calc-label {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'Inter', sans-serif;
     font-size: 10px;
     text-transform: uppercase;
-    letter-spacing: 0.12em;
-    opacity: 0.65;
+    letter-spacing: 0.06em;
+    opacity: 0.7;
     margin-bottom: 6px;
+    font-weight: 700;
   }
   .merma-calc-value {
-    font-family: 'Fraunces', serif;
-    font-size: 22px;
-    font-weight: 700;
+    font-family: 'Inter', sans-serif;
+    font-size: 24px;
+    font-weight: 900;
     color: var(--ink);
     line-height: 1.1;
   }
@@ -552,7 +638,7 @@
   @media (max-width: 720px) {
     .merma-calc-item {
       border-right: none;
-      border-bottom: 1px solid rgba(26, 15, 10, 0.15);
+      border-bottom: 1px solid rgba(30, 58, 138, 0.15);
     }
     .merma-calc-item:last-child { border-bottom: none; }
   }
@@ -562,19 +648,21 @@
     display: none;
     position: fixed;
     inset: 0;
-    background: rgba(26, 15, 10, 0.6);
+    background: rgba(13, 36, 81, 0.7);
     z-index: 100;
     align-items: center;
     justify-content: center;
     padding: 20px;
+    backdrop-filter: blur(4px);
   }
 
   .modal.open { display: flex; animation: fadeIn 0.2s; }
 
   .modal-content {
     background: var(--cream);
-    border: 1px solid var(--line);
-    box-shadow: 8px 8px 0 var(--ink);
+    border: 4px solid var(--ink);
+    border-radius: 24px;
+    box-shadow: 0 12px 0 rgba(13, 36, 81, 0.4);
     max-width: 540px;
     width: 100%;
     padding: 28px;
@@ -587,28 +675,31 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: 20px;
-    border-bottom: 2px solid var(--line);
+    border-bottom: 2px dashed rgba(30, 58, 138, 0.25);
     padding-bottom: 14px;
   }
 
   .modal-title {
-    font-family: 'Fraunces', serif;
-    font-size: 24px;
-    font-weight: 800;
+    font-family: 'Bungee', 'Inter', sans-serif;
+    font-size: 20px;
+    font-weight: 400;
+    color: var(--ink);
   }
 
   .modal-close {
-    background: none;
-    border: none;
-    font-size: 24px;
+    background: var(--paper);
+    border: 2px solid var(--ink);
+    border-radius: 50%;
+    font-size: 16px;
     cursor: pointer;
     color: var(--ink);
     padding: 0;
-    width: 32px;
-    height: 32px;
+    width: 34px;
+    height: 34px;
+    font-weight: 800;
   }
 
-  .modal-close:hover { color: var(--blood); }
+  .modal-close:hover { background: var(--blood); color: white; }
 
   /* === TOAST === */
   .toast {
@@ -616,21 +707,24 @@
     bottom: 24px;
     right: 24px;
     background: var(--ink);
-    color: var(--paper);
-    padding: 14px 20px;
-    font-family: 'JetBrains Mono', monospace;
+    color: white;
+    padding: 14px 22px;
+    font-family: 'Inter', sans-serif;
     font-size: 12px;
     text-transform: uppercase;
-    letter-spacing: 0.15em;
-    border-left: 4px solid var(--mustard);
-    box-shadow: 4px 4px 0 var(--blood);
+    letter-spacing: 0.06em;
+    font-weight: 700;
+    border: 3px solid var(--ink);
+    border-radius: 14px;
+    border-left: 6px solid var(--mustard);
+    box-shadow: 0 6px 0 rgba(13, 36, 81, 0.4);
     z-index: 200;
     transform: translateX(120%);
     transition: transform 0.3s;
   }
 
   .toast.show { transform: translateX(0); }
-  .toast.success { border-left-color: var(--olive); }
+  .toast.success { border-left-color: #65a30d; }
   .toast.error { border-left-color: var(--blood); }
 
   /* === FILTER === */
@@ -644,73 +738,87 @@
   .filter-bar input,
   .filter-bar select {
     padding: 10px 14px;
-    border: 1px solid var(--line);
+    border: 2px solid var(--ink);
+    border-radius: 10px;
     background: var(--cream);
     font-family: 'Inter', sans-serif;
     font-size: 13px;
+    font-weight: 500;
     min-width: 180px;
+  }
+
+  .filter-bar input:focus,
+  .filter-bar select:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.25);
   }
 
   /* === DECORATIVE === */
   .ornament {
     text-align: center;
     margin: 40px 0 20px;
-    font-family: 'Fraunces', serif;
-    color: var(--blood);
-    letter-spacing: 1em;
-    opacity: 0.5;
+    font-family: 'Bungee', sans-serif;
+    color: white;
+    letter-spacing: 0.5em;
+    opacity: 0.6;
   }
 
   /* === RESPONSIVE === */
   @media (max-width: 720px) {
-    header { padding: 20px; }
-    main { padding: 20px; }
-    .brand-mark { font-size: 38px; }
-    .panel-title { font-size: 26px; }
-    nav.tabs { padding: 0 20px; }
-    .tab { padding: 14px 18px; font-size: 11px; }
-    .stat-value { font-size: 24px; }
+    header { padding: 22px 20px 16px; margin: 12px; border-radius: 20px; }
+    main { padding: 12px; }
+    nav.tabs { margin: 0 12px 12px; padding: 0; }
+    .brand-mark { font-size: 26px; }
+    .brand-logo { width: 46px; height: 46px; font-size: 22px; }
+    .panel-title { font-size: 22px; }
+    .tab { padding: 10px 16px; font-size: 11px; }
+    .stat-value { font-size: 22px; }
     thead th, tbody td { padding: 10px; font-size: 12px; }
+    .form-card, .table-wrap { border-radius: 14px; }
   }
 
   /* === SCANNER === */
   .scan-modes {
-    display: flex;
-    gap: 0;
-    margin-bottom: 24px;
-    border: 1.5px solid var(--line);
+    display: inline-flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    padding: 6px;
     background: var(--cream);
-    width: fit-content;
+    border: 3px solid var(--ink);
+    border-radius: 14px;
   }
   .scan-mode {
-    padding: 12px 22px;
+    padding: 10px 20px;
     border: none;
     background: transparent;
-    font-family: 'JetBrains Mono', monospace;
+    border-radius: 9px;
+    font-family: 'Inter', sans-serif;
     font-size: 12px;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
     cursor: pointer;
     color: var(--ink);
-    border-right: 1.5px solid var(--line);
     transition: all 0.15s ease;
+    font-weight: 800;
   }
-  .scan-mode:last-child { border-right: none; }
-  .scan-mode:hover { background: rgba(139, 26, 26, 0.05); }
-  .scan-mode.active { background: var(--ink); color: var(--cream); }
+  .scan-mode:hover { background: var(--paper); }
+  .scan-mode.active { background: var(--blood); color: white; }
 
   .scan-pane { display: none; }
   .scan-pane.active { display: block; animation: fadeIn 0.3s ease; }
 
   .scan-config {
     background: var(--cream);
-    border: 1.5px solid var(--line);
+    border: 3px solid var(--ink);
+    border-radius: 16px;
     padding: 18px;
     margin-bottom: 18px;
+    box-shadow: 0 5px 0 rgba(13, 36, 81, 0.3);
   }
 
   .dropzone {
-    border: 2.5px dashed var(--line);
+    border: 3px dashed var(--ink);
+    border-radius: 18px;
     background: var(--cream);
     padding: 40px 24px;
     text-align: center;
@@ -723,26 +831,27 @@
     justify-content: center;
   }
   .dropzone:hover, .dropzone.drag-over {
-    background: var(--paper-dark);
+    background: var(--paper);
     border-color: var(--blood);
+    transform: translateY(-2px);
   }
   .dropzone-icon {
-    font-size: 56px;
+    font-size: 64px;
     margin-bottom: 12px;
-    filter: grayscale(0.3);
   }
   .dropzone-title {
-    font-family: 'Fraunces', serif;
-    font-size: 22px;
-    font-weight: 600;
-    margin-bottom: 6px;
+    font-family: 'Bungee', 'Inter', sans-serif;
+    font-size: 20px;
+    font-weight: 400;
+    margin-bottom: 8px;
+    color: var(--ink);
   }
   .dropzone-sub {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 11px;
-    color: rgba(26, 15, 10, 0.6);
-    margin-bottom: 16px;
-    letter-spacing: 0.05em;
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    color: rgba(13, 36, 81, 0.7);
+    margin-bottom: 18px;
+    font-weight: 500;
   }
   .dropzone-actions { display: flex; gap: 10px; justify-content: center; }
   .dropzone-preview { width: 100%; }
@@ -751,21 +860,24 @@
     max-height: 360px;
     display: block;
     margin: 0 auto;
-    border: 1.5px solid var(--line);
+    border: 3px solid var(--ink);
+    border-radius: 14px;
   }
 
   .scan-progress {
     margin-top: 18px;
     padding: 16px;
     background: var(--cream);
-    border: 1.5px solid var(--line);
+    border: 3px solid var(--ink);
+    border-radius: 14px;
   }
   .progress-bar {
-    height: 8px;
-    background: var(--paper-dark);
-    border: 1px solid var(--line);
+    height: 12px;
+    background: var(--paper);
+    border: 2px solid var(--ink);
+    border-radius: 8px;
     overflow: hidden;
-    margin-bottom: 8px;
+    margin-bottom: 10px;
   }
   .progress-fill {
     height: 100%;
@@ -774,10 +886,11 @@
     transition: width 0.3s ease;
   }
   .progress-text {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 11px;
-    letter-spacing: 0.08em;
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
     text-align: center;
+    font-weight: 700;
+    color: var(--ink);
   }
 
   .scan-actions {
@@ -789,60 +902,72 @@
   .ocr-raw {
     margin-top: 18px;
     background: var(--cream);
-    border: 1.5px solid var(--line);
-    padding: 16px;
+    border: 3px solid var(--ink);
+    border-radius: 14px;
+    padding: 18px;
   }
   .ocr-raw textarea {
     width: 100%;
-    border: 1.5px solid var(--line);
-    padding: 10px;
-    font-family: 'JetBrains Mono', monospace;
+    border: 2px solid var(--ink);
+    border-radius: 10px;
+    padding: 12px;
+    font-family: 'Inter', sans-serif;
     font-size: 12px;
-    background: white;
+    background: var(--paper);
     resize: vertical;
   }
 
   .review-section {
     margin-top: 24px;
-    border-top: 2px solid var(--line);
     padding-top: 24px;
+    border-top: 3px dashed rgba(255, 255, 255, 0.4);
   }
   .review-head { margin-bottom: 16px; }
   .review-title {
-    font-family: 'Fraunces', serif;
-    font-size: 24px;
-    font-weight: 700;
+    font-family: 'Bungee', 'Inter', sans-serif;
+    font-size: 22px;
+    font-weight: 400;
+    color: var(--cream);
+    text-shadow: 0 3px 0 rgba(13, 36, 81, 0.4);
   }
   .review-title em {
-    font-style: italic;
-    color: var(--blood);
-    font-weight: 400;
+    font-style: normal;
+    background: var(--mustard);
+    color: var(--ink);
+    padding: 2px 12px;
+    border-radius: 8px;
+    border: 2px solid var(--ink);
+    text-shadow: none;
   }
   .review-sub {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 11px;
-    color: rgba(26, 15, 10, 0.6);
-    letter-spacing: 0.06em;
-    margin-top: 4px;
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    color: var(--cream);
+    margin-top: 6px;
+    font-weight: 500;
+    opacity: 0.95;
   }
   .review-table input, .review-table select {
     width: 100%;
-    padding: 6px 8px;
-    border: 1px solid rgba(26, 15, 10, 0.3);
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 12px;
+    padding: 7px 10px;
+    border: 2px solid rgba(30, 58, 138, 0.3);
+    border-radius: 8px;
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
     background: white;
+    font-weight: 500;
   }
   .review-table input:focus, .review-table select:focus {
     outline: none;
     border-color: var(--blood);
-    box-shadow: 0 0 0 2px rgba(139, 26, 26, 0.1);
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.2);
   }
   .review-table tr.unchecked td { opacity: 0.4; }
   .review-table input[type="checkbox"] {
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
     cursor: pointer;
+    accent-color: var(--blood);
   }
   .review-actions {
     display: flex;
@@ -852,13 +977,15 @@
     flex-wrap: wrap;
   }
   .btn-row-delete {
-    background: transparent;
-    border: 1px solid rgba(139, 26, 26, 0.4);
+    background: var(--cream);
+    border: 2px solid var(--blood);
+    border-radius: 8px;
     color: var(--blood);
-    padding: 5px 9px;
-    font-size: 11px;
+    padding: 6px 12px;
+    font-size: 12px;
     cursor: pointer;
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'Inter', sans-serif;
+    font-weight: 800;
   }
   .btn-row-delete:hover { background: var(--blood); color: white; }
 </style>
@@ -869,13 +996,16 @@
   <div class="header-top">
     <div>
       <div class="brand">
-        <div class="brand-mark"><span>EL</span> Inventario</div>
+        <div class="brand-logo">🌮</div>
+        <div class="brand-text">
+          <div class="brand-mark">TACO <span>PARADO</span></div>
+          <div class="brand-sub">Inventario · Compras · Mermas</div>
+        </div>
       </div>
-      <div class="brand-sub" style="margin-top: 8px;">Sistema de Compras · Productos · Mermas</div>
     </div>
     <div class="meta-strip">
       <div><span>Fecha</span><strong id="todayDate">—</strong></div>
-      <div><span>Estado</span><strong style="color: var(--olive);">● ACTIVO</strong></div>
+      <div><span>Estado</span><strong style="color: #16a34a;">● ACTIVO</strong></div>
     </div>
   </div>
 
@@ -1278,27 +1408,27 @@
       </div>
     </div>
 
-    <div style="background: var(--cream); border: 1px solid var(--line); padding: 32px; box-shadow: 4px 4px 0 var(--ink);">
-      <p style="font-family: 'Fraunces', serif; font-size: 18px; line-height: 1.6; margin-bottom: 24px;">
+    <div style="background: var(--cream); border: 3px solid var(--ink); border-radius: 18px; padding: 28px; box-shadow: 0 6px 0 rgba(13, 36, 81, 0.3);">
+      <p style="font-family: 'Inter', sans-serif; font-size: 16px; line-height: 1.6; margin-bottom: 24px; font-weight: 500; color: var(--ink);">
         El archivo Excel incluirá <strong>4 hojas</strong>: <em>Resumen General</em>, <em>Proveedores</em>, <em>Inventario de Productos</em> y <em>Mermas</em>.
       </p>
 
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 28px;">
-        <div style="padding: 16px; border: 1px dashed var(--line); background: var(--paper);">
-          <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.15em; opacity: 0.6;">Hoja 1</div>
-          <div style="font-family: 'Fraunces', serif; font-weight: 700; font-size: 16px; margin-top: 4px;">Resumen</div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 28px;">
+        <div style="padding: 14px 16px; border: 2px solid var(--ink); border-radius: 12px; background: var(--paper); border-left: 6px solid var(--blood);">
+          <div style="font-family: 'Inter', sans-serif; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.65; font-weight: 700;">Hoja 1</div>
+          <div style="font-family: 'Bungee', sans-serif; font-weight: 400; font-size: 14px; margin-top: 4px;">Resumen</div>
         </div>
-        <div style="padding: 16px; border: 1px dashed var(--line); background: var(--paper);">
-          <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.15em; opacity: 0.6;">Hoja 2</div>
-          <div style="font-family: 'Fraunces', serif; font-weight: 700; font-size: 16px; margin-top: 4px;">Proveedores</div>
+        <div style="padding: 14px 16px; border: 2px solid var(--ink); border-radius: 12px; background: var(--paper); border-left: 6px solid var(--ink-soft);">
+          <div style="font-family: 'Inter', sans-serif; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.65; font-weight: 700;">Hoja 2</div>
+          <div style="font-family: 'Bungee', sans-serif; font-weight: 400; font-size: 14px; margin-top: 4px;">Proveedores</div>
         </div>
-        <div style="padding: 16px; border: 1px dashed var(--line); background: var(--paper);">
-          <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.15em; opacity: 0.6;">Hoja 3</div>
-          <div style="font-family: 'Fraunces', serif; font-weight: 700; font-size: 16px; margin-top: 4px;">Inventario</div>
+        <div style="padding: 14px 16px; border: 2px solid var(--ink); border-radius: 12px; background: var(--paper); border-left: 6px solid var(--mustard);">
+          <div style="font-family: 'Inter', sans-serif; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.65; font-weight: 700;">Hoja 3</div>
+          <div style="font-family: 'Bungee', sans-serif; font-weight: 400; font-size: 14px; margin-top: 4px;">Inventario</div>
         </div>
-        <div style="padding: 16px; border: 1px dashed var(--line); background: var(--paper);">
-          <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.15em; opacity: 0.6;">Hoja 4</div>
-          <div style="font-family: 'Fraunces', serif; font-weight: 700; font-size: 16px; margin-top: 4px;">Mermas</div>
+        <div style="padding: 14px 16px; border: 2px solid var(--ink); border-radius: 12px; background: var(--paper); border-left: 6px solid var(--blood-dark);">
+          <div style="font-family: 'Inter', sans-serif; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.65; font-weight: 700;">Hoja 4</div>
+          <div style="font-family: 'Bungee', sans-serif; font-weight: 400; font-size: 14px; margin-top: 4px;">Mermas</div>
         </div>
       </div>
 
@@ -1309,11 +1439,9 @@
         <input type="file" id="importFile" accept=".json" style="display:none" onchange="importBackup(event)">
       </div>
 
-      <div class="ornament">❦  ❦  ❦</div>
-
-      <div style="border-top: 1px dashed var(--line); padding-top: 20px;">
-        <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.15em; opacity: 0.6; margin-bottom: 12px;">Zona de peligro</div>
-        <button class="btn btn-ghost" onclick="clearAllData()" style="border-color: var(--blood); color: var(--blood);">⚠ Borrar todos los datos</button>
+      <div style="margin-top: 32px; padding-top: 24px; border-top: 2px dashed rgba(30, 58, 138, 0.25);">
+        <div style="font-family: 'Inter', sans-serif; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.65; margin-bottom: 12px; font-weight: 700; color: var(--blood);">⚠ Zona de peligro</div>
+        <button class="btn" onclick="clearAllData()" style="background: var(--cream); border-color: var(--blood); color: var(--blood);">⚠ Borrar todos los datos</button>
       </div>
     </div>
   </section>
@@ -1717,7 +1845,7 @@ function renderMermas() {
         <div class="merma-card-name">${tipo}</div>
         <div class="merma-card-total">${fmt(totalMerma)}</div>
         <div class="merma-card-unit">kg merma · ${pctProm.toFixed(1)}%</div>
-        <div style="margin-top:10px; padding-top:10px; border-top:1px dashed rgba(26,15,10,.2); font-family:'JetBrains Mono',monospace; font-size:10px; line-height:1.6;">
+        <div style="margin-top:10px; padding-top:10px; border-top:1px dashed rgba(30,58,138,.25); font-family:'Inter',sans-serif; font-size:11px; line-height:1.6; font-weight:600;">
           <div>Crudo: <strong>${fmt(totalAntes)} kg</strong></div>
           <div>Cocido: <strong>${fmt(totalDespues)} kg</strong></div>
         </div>
